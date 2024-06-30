@@ -2,118 +2,93 @@ package resp
 
 import (
 	"bufio"
+	"errors"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"io"
 	"strings"
 	"testing"
 )
 
-func TestValue_Unmarshal(t *testing.T) {
+func TestUnmarshal(t *testing.T) {
 	cases := []struct {
 		Name     string
 		Input    string
 		Expected interface{}
-		Value    Value
+		Error    error
 	}{
-		{Name: "string", Input: "+abacaba\r\n", Expected: "abacaba", Value: SimpleString("")},
-		{Name: "empty_string", Input: "+\r\n", Expected: "", Value: SimpleString("")},
-		{Name: "positive", Input: ":67890\r\n", Expected: int64(67890), Value: Int(0)},
-		{Name: "negative", Input: ":-123456\r\n", Expected: int64(-123456), Value: Int(0)},
-		{Name: "unary_plus", Input: ":+123\r\n", Expected: int64(123), Value: Int(0)},
-		{Name: "error", Input: "-abacaba\r\n", Expected: "abacaba", Value: Error("")},
+		{Name: "simple string", Input: "+abacaba\r\n", Expected: "abacaba"},
+		{Name: "empty_string", Input: "+\r\n", Expected: ""},
+		{Name: "positive", Input: ":67890\r\n", Expected: int64(67890)},
+		{Name: "negative", Input: ":-123456\r\n", Expected: int64(-123456)},
+		{Name: "unary_plus", Input: ":+123\r\n", Expected: int64(123)},
+		{Name: "error", Input: "-abacaba\r\n", Expected: errors.New("abacaba")},
+		{Name: "empty_bulk_string", Input: "$0\r\n\r\n", Expected: []byte{}},
+		{Name: "nil_bulk_string", Input: "$-1\r\n", Expected: []byte(nil)},
+		{Name: "bulk_string", Input: "$7\r\na\rb\nc\r\n\r\n", Expected: []byte("a\rb\nc\r\n")},
+		{Name: "nil_array", Input: "*-1\r\n", Expected: []interface{}(nil)},
+		{Name: "empty_array", Input: "*0\r\n", Expected: []interface{}{}},
+		{Name: "empty buffer", Input: "", Error: io.EOF},
+		{Name: "lkasjdaksdjasgdjh", Input: "", Error: io.EOF},
+		{
+			Name:  "Array",
+			Input: "*4\r\n+abacaba\r\n:32\r\n:42\r\n$3\r\nabc\r\n",
+			Expected: []interface{}{"abacaba",
+				int64(32),
+				int64(42),
+				[]byte("abc"),
+			},
+		},
 	}
+
 	for _, c := range cases {
 		t.Run(c.Name, func(t *testing.T) {
 			r := bufio.NewReader(strings.NewReader(c.Input))
-			err := c.Value.Unmarshal(r)
-			require.NoError(t, err, "valid input should not produce an error")
-			assert.Equal(t, c.Expected, c.Value.Value())
+			actual, err := Unmarshal(r)
+			if err != nil {
+				require.ErrorIs(t, err, c.Error)
+			}
+			assert.Equal(t, c.Expected, actual)
 		})
 	}
 }
 
-func TestBulkString_Unmarshal(t *testing.T) {
-	t.Run("empty string", func(t *testing.T) {
-		r := bufio.NewReader(strings.NewReader("$0\r\n\r\n"))
-		str := NullBulkString()
-		err := str.Unmarshal(r)
-		require.NoError(t, err)
-		bytes, ok := str.Bytes()
-		assert.True(t, ok)
-		assert.Equal(t, 0, len(bytes))
-		assert.False(t, str.IsNull())
-	})
-
-	t.Run("null string", func(t *testing.T) {
-		r := bufio.NewReader(strings.NewReader("$-1\r\n"))
-		str := NullBulkString()
-		err := str.Unmarshal(r)
-		require.NoError(t, err)
-		bytes, ok := str.Bytes()
-		assert.True(t, ok)
-		assert.Equal(t, 0, len(bytes))
-		assert.True(t, str.IsNull())
-	})
-
-	t.Run("string with line endings", func(t *testing.T) {
-		r := bufio.NewReader(strings.NewReader("$7\r\na\rb\nc\r\n\r\n"))
-		str := NullBulkString()
-		err := str.Unmarshal(r)
-		require.NoError(t, err)
-		bytes, ok := str.Bytes()
-		assert.True(t, ok)
-		assert.Equal(t, []byte("a\rb\nc\r\n"), bytes)
-		assert.False(t, str.IsNull())
-	})
-
-}
-
-func TestArray_Unmarshal(t *testing.T) {
+func TestMarshal(t *testing.T) {
 	cases := []struct {
-		Name          string
-		Input         string
-		ExpectedSize  int
-		ExpectedNull  bool
-		ExpectedValue []Value
+		Name     string
+		Input    interface{}
+		Expected string
+		Error    error
 	}{
+		{Name: "simple string", Expected: "+abacaba\r\n", Input: "abacaba"},
+		{Name: "empty_string", Expected: "+\r\n", Input: ""},
+		{Name: "positive", Expected: ":67890\r\n", Input: int64(67890)},
+		{Name: "negative", Expected: ":-123456\r\n", Input: int64(-123456)},
+		{Name: "error", Expected: "-abacaba\r\n", Input: errors.New("abacaba")},
+		{Name: "empty_bulk_string", Expected: "$0\r\n\r\n", Input: []byte{}},
+		{Name: "nil_bulk_string", Expected: "$-1\r\n", Input: []byte(nil)},
+		{Name: "bulk_string", Expected: "$7\r\na\rb\nc\r\n\r\n", Input: []byte("a\rb\nc\r\n")},
+		{Name: "nil_array", Expected: "*-1\r\n", Input: []interface{}(nil)},
+		{Name: "empty_array", Expected: "*0\r\n", Input: []interface{}{}},
 		{
-			Name:          "null array",
-			Input:         "*-1\r\n",
-			ExpectedSize:  0,
-			ExpectedNull:  true,
-			ExpectedValue: []Value(nil),
-		},
-		{
-			Name:          "empty array",
-			Input:         "*0\r\n",
-			ExpectedSize:  0,
-			ExpectedNull:  false,
-			ExpectedValue: []Value{},
-		},
-		{
-			Name:         "simple values",
-			Input:        "*4\r\n+abacaba\r\n:32\r\n:42\r\n$3\r\nabc\r\n",
-			ExpectedSize: 4,
-			ExpectedNull: false,
-			ExpectedValue: []Value{
-				SimpleString("abacaba"),
-				Int(32),
-				Int(42),
-				BulkString([]byte("abc")),
+			Name:     "Array",
+			Expected: "*4\r\n+abacaba\r\n:32\r\n:42\r\n$3\r\nabc\r\n",
+			Input: []interface{}{"abacaba",
+				int64(32),
+				int64(42),
+				[]byte("abc"),
 			},
 		},
 	}
+
 	for _, c := range cases {
 		t.Run(c.Name, func(t *testing.T) {
-			r := bufio.NewReader(strings.NewReader(c.Input))
-			arr := NullArray()
-			err := arr.Unmarshal(r)
-			require.NoError(t, err)
-			value, ok := arr.Array()
-			assert.True(t, ok)
-			assert.Equal(t, c.ExpectedNull, arr.IsNull())
-			assert.Equal(t, c.ExpectedSize, len(value))
-			assert.Equal(t, value, c.ExpectedValue)
+			w := &strings.Builder{}
+			err := Marshal(w, c.Input)
+			if err != nil {
+				require.ErrorIs(t, err, c.Error)
+			}
+			assert.Equal(t, c.Expected, w.String())
 		})
 	}
 }
