@@ -4,9 +4,10 @@ import (
 	"errors"
 	"flag"
 	"github.com/burenotti/redis_impl/internal/config"
-	"github.com/burenotti/redis_impl/internal/domain/storage"
 	"github.com/burenotti/redis_impl/internal/handler"
 	"github.com/burenotti/redis_impl/internal/server"
+	"github.com/burenotti/redis_impl/internal/service"
+	"github.com/burenotti/redis_impl/internal/storage/memory"
 	"log/slog"
 	"os"
 	"os/signal"
@@ -31,8 +32,10 @@ func main() {
 	parseFlags()
 
 	cfg := config.MustLoad(configPath)
-	store := storage.New()
-	handle := handler.New(store)
+	store := memory.New()
+	handle := handler.New(func() *service.Controller {
+		return service.New(store)
+	})
 	srv := server.Default(handle)
 	srv.Host = cfg.Server.Host
 	srv.Port = cfg.Server.Port

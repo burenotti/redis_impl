@@ -175,11 +175,8 @@ func (s *Server) processConnection(conn net.Conn) {
 	go func() {
 		defer close(done)
 		var err error
-		for {
-			if err = s.Handler.Handle(ctx, conn, conn); err != nil {
-				s.Logger.Error("failed to handle connection", "error", err)
-				break
-			}
+		if err = s.Handler.Handle(ctx, conn, conn); err != nil {
+			s.Logger.Error("failed to handle connection", "error", err)
 		}
 	}()
 

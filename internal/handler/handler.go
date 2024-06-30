@@ -3,83 +3,96 @@ package handler
 import (
 	"bufio"
 	"context"
+	"errors"
+	"fmt"
+	"github.com/burenotti/redis_impl/internal/domain/cmd"
+	"github.com/burenotti/redis_impl/internal/service"
 	"github.com/burenotti/redis_impl/pkg/resp"
 	"io"
 	"strings"
 )
 
-type Storage interface {
-	Get(key string) (string, bool)
-	Set(key string, value string)
-}
-
-type CommandHandler interface {
-	Handle(ctx context.Context, cmd *Command) (resp.Value, error)
-}
-
-type CommandFunc func(ctx context.Context, cmd *Command) (resp.Value, error)
-
-func (c CommandFunc) Handle(ctx context.Context, cmd *Command) (resp.Value, error) {
-	return c(ctx, cmd)
-}
-
-type Command struct {
-	Name string
-	Args []resp.Value
-}
+var (
+	ErrSyntax = errors.New("syntax error")
+)
 
 type Handler struct {
-	storage  Storage
-	handlers map[string]CommandHandler
+	createController func() *service.Controller
+	commands         map[string]func([]interface{}) (cmd.Command, error)
 }
 
-func New(store Storage) *Handler {
+func New(createController func() *service.Controller) *Handler {
 	h := &Handler{
-		storage: store,
-	}
-	h.handlers = map[string]CommandHandler{
-		"PING": CommandFunc(h.ping),
-		"ECHO": CommandFunc(h.echo),
-		"INFO": CommandFunc(h.info),
-		"SET":  CommandFunc(h.set),
-		"GET":  CommandFunc(h.get),
+		createController: createController,
+		commands: map[string]func([]interface{}) (cmd.Command, error){
+			cmd.GET:     parseGet,
+			cmd.SET:     parseSet,
+			cmd.PING:    parsePing,
+			cmd.MULTI:   parseMulti,
+			cmd.EXEC:    parseExec,
+			cmd.DISCARD: parseDiscard,
+			cmd.WATCH:   parseWatch,
+			cmd.UNWATCH: parseUnwatch,
+		},
 	}
 	return h
 }
 
 func (h *Handler) Handle(ctx context.Context, req io.Reader, res io.Writer) error {
 	reader := bufio.NewReader(req)
-	cmd := resp.NullArray()
+	controller := h.createController()
+	for {
+		command, err := h.parseNextCommand(reader)
+		if err != nil {
+			if err := resp.Marshal(res, err.Error()); err != nil {
+				return err
+			}
+			continue
+		}
 
-	if err := cmd.Unmarshal(reader); err != nil {
-		return resp.Marshal(res, resp.Error(err.Error()))
+		result, err := controller.Run(ctx, command)
+
+		if err != nil {
+			if err := resp.Marshal(res, err.Error()); err != nil {
+				return err
+			}
+			continue
+		}
+
+		if err := h.marshalResult(res, result); err != nil {
+			return err
+		}
 	}
+}
 
-	arr, _ := cmd.Array()
-	if len(arr) == 0 {
-		return resp.Marshal(res, resp.Error("can't work with empty array"))
+func (h *Handler) marshalResult(w io.Writer, result *cmd.Result) error {
+	if len(result.Values) == 1 {
+		return resp.Marshal(w, result.Values[0])
 	}
+	return resp.Marshal(w, result.Values)
+}
 
-	name, ok := arr[0].String()
-	if !ok {
-		return resp.Marshal(res, resp.Error("command name must not be empty"))
-	}
+func (h *Handler) parseNextCommand(r *bufio.Reader) (cmd.Command, error) {
 
-	command := Command{
-		Name: strings.ToUpper(name),
-		Args: arr[1:],
-	}
-
-	handler, ok := h.handlers[command.Name]
-
-	if !ok {
-		return resp.Marshal(res, resp.Error("unknown command"))
-	}
-
-	result, err := handler.Handle(ctx, &command)
+	data, err := resp.Unmarshal(r)
 	if err != nil {
-		return resp.Marshal(res, resp.Error("unexpected error"))
+		return nil, err
 	}
 
-	return resp.Marshal(res, result)
+	arr, ok := data.([]interface{})
+	if !ok || len(arr) == 0 {
+		return nil, errors.New("syntax error")
+	}
+
+	rawName, ok := arr[0].([]byte)
+	if !ok || len(rawName) == 0 {
+		return nil, errors.New("command name must not be empty string")
+	}
+	name := strings.ToUpper(string(rawName))
+
+	parser, ok := h.commands[name]
+	if !ok {
+		return nil, fmt.Errorf("%w: unknown command %s", ErrSyntax, name)
+	}
+	return parser(arr[1:])
 }
