@@ -116,6 +116,10 @@ func parseWatch(args []interface{}) (cmd.Command, error) {
 	return cmd.Watch(parsed...), nil
 }
 
+func parseHello(args []interface{}) (cmd.Command, error) {
+	return cmd.Hello(), nil
+}
+
 func asString(i interface{}) (string, bool) {
 	if bytes, ok := i.([]byte); ok {
 		return string(bytes), true

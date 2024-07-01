@@ -33,6 +33,7 @@ func New(createController func() *service.Controller) *Handler {
 			cmd.DISCARD: parseDiscard,
 			cmd.WATCH:   parseWatch,
 			cmd.UNWATCH: parseUnwatch,
+			cmd.HELLO:   parseHello,
 		},
 	}
 	return h

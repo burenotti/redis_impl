@@ -17,6 +17,7 @@ const (
 	DISCARD = "DISCARD"
 	WATCH   = "WATCH"
 	UNWATCH = "UNWATCH"
+	HELLO   = "HELLO"
 )
 
 type Storage interface {
