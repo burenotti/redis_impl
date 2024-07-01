@@ -1,12 +1,15 @@
-package queue
+package queue_test
 
 import (
-	"github.com/stretchr/testify/assert"
 	"testing"
+
+	"github.com/burenotti/redis_impl/pkg/queue"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestQueue(t *testing.T) {
-	q := Of[int](1, 2, 3, 4)
+	t.Parallel()
+	q := queue.Of[int](1, 2, 3, 4)
 	assert.Equal(t, uint64(4), q.Len())
 
 	v, ok := q.Pop()
@@ -33,7 +36,7 @@ func TestQueue(t *testing.T) {
 	assert.Equal(t, 5, v)
 
 	assert.EqualValues(t, 0, q.Len())
-	v, ok = q.Pop()
+	_, ok = q.Pop()
 
 	assert.False(t, ok)
 

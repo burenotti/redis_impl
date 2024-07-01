@@ -18,14 +18,15 @@ const (
 	HELLO   = "HELLO"
 )
 
-var (
-	NilString = []byte(nil)
-	NilArray  = []interface{}(nil)
-)
+func NilString() []byte {
+	return []byte(nil)
+}
 
-var (
-	ErrInvalidOpt = errors.New("invalid option")
-)
+func NilArray() []interface{} {
+	return []interface{}(nil)
+}
+
+var ErrInvalidOpt = errors.New("invalid option")
 
 type Result struct {
 	Values []interface{}
@@ -50,8 +51,7 @@ type Command interface {
 	IsTx() bool
 }
 
-type baseCommand struct {
-}
+type baseCommand struct{}
 
 func (b *baseCommand) IsModifying() bool {
 	return false

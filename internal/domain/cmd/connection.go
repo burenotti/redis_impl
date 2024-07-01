@@ -4,7 +4,9 @@ import (
 	"context"
 )
 
-var Pong = NewResult("PONG")
+func ResultPong() *Result {
+	return NewResult("PONG")
+}
 
 func Ping() Command {
 	return &ping{}
@@ -14,8 +16,8 @@ type ping struct {
 	baseCommand
 }
 
-func (p *ping) Execute(ctx context.Context, storage Storage) (*Result, error) {
-	return Pong, nil
+func (p *ping) Execute(_ context.Context, _ Storage) (*Result, error) {
+	return ResultPong(), nil
 }
 
 func (p *ping) Name() string {
@@ -33,7 +35,8 @@ func Hello() Command {
 func (h *hello) Name() string {
 	return HELLO
 }
-func (h *hello) Execute(ctx context.Context, storage Storage) (*Result, error) {
+
+func (h *hello) Execute(_ context.Context, _ Storage) (*Result, error) {
 	return NewResult([]interface{}{
 		"server", "redis",
 		"version", "3.0.0",
@@ -41,6 +44,7 @@ func (h *hello) Execute(ctx context.Context, storage Storage) (*Result, error) {
 		"id", "1",
 		"mode", "standalone",
 		"role", "master",
-		"modules", []interface{}{},
+		"modules",
+		[]interface{}{},
 	}), nil
 }

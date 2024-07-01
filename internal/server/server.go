@@ -12,9 +12,13 @@ import (
 	"time"
 )
 
-var (
-	ErrStoppedAbnormally = errors.New("server stopped abnormally")
+const (
+	defaultHost           = "localhost"
+	defaultPort           = 6379
+	defaultMaxConnections = 256
 )
+
+var ErrStoppedAbnormally = errors.New("server stopped abnormally")
 
 type Handler interface {
 	Handle(ctx context.Context, req io.Reader, resp io.Writer) error
@@ -42,10 +46,10 @@ type Server struct {
 
 func Default(handler Handler) *Server {
 	return &Server{
-		Host:           "localhost",
-		Port:           6379,
+		Host:           defaultHost,
+		Port:           defaultPort,
 		Logger:         slog.Default(),
-		MaxConnections: 256,
+		MaxConnections: defaultMaxConnections,
 		Handler:        handler,
 		running:        false,
 		connections:    nil,

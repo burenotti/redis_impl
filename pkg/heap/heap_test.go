@@ -1,15 +1,17 @@
-package heap
+package heap_test
 
 import (
+	"github.com/burenotti/redis_impl/pkg/heap"
 	"github.com/stretchr/testify/assert"
 	"sort"
 	"testing"
 )
 
 func TestHeap_Pop(t *testing.T) {
+	t.Parallel()
 	expectedOrder := []int{2, 3, 4, 7, 10}
 
-	h := OfOrdered(10, 3, 7, 2, 4)
+	h := heap.OfOrdered(10, 3, 7, 2, 4)
 
 	assert.Equal(t, len(expectedOrder), h.Len())
 	for _, item := range expectedOrder {
@@ -19,6 +21,7 @@ func TestHeap_Pop(t *testing.T) {
 }
 
 func TestHeap_Push(t *testing.T) {
+	t.Parallel()
 	values := []int{7, 1, -5, 10, 12, 3, 0}
 	expectedOrder := append(make([]int, 0, len(values)), values...)
 
@@ -26,7 +29,7 @@ func TestHeap_Push(t *testing.T) {
 		return expectedOrder[i] < expectedOrder[j]
 	})
 
-	h := OfOrdered[int]()
+	h := heap.OfOrdered[int]()
 	assert.Equal(t, 0, h.Len())
 	for _, value := range values {
 		h.Push(value)

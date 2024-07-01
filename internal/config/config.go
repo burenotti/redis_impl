@@ -7,9 +7,7 @@ import (
 	"time"
 )
 
-var (
-	ErrConfigNotLoaded = errors.New("config not loaded")
-)
+var ErrConfigNotLoaded = errors.New("config not loaded")
 
 type Config struct {
 	Server struct {
@@ -38,5 +36,5 @@ func MustLoad(filePath string) *Config {
 }
 
 func configNotLoadedErr(format string, args ...any) error {
-	return errors.Join(fmt.Errorf(format, args...), ErrConfigNotLoaded)
+	return errors.Join(fmt.Errorf(format, args...), ErrConfigNotLoaded) //nolint:err113 // joining errors is ok
 }

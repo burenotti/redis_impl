@@ -24,11 +24,10 @@ func (g get) Execute(ctx context.Context, storage Storage) (*Result, error) {
 		val, err := storage.Get(ctx, key)
 		if err != nil {
 			if errors.Is(err, ErrKeyNotFound) {
-				result = append(result, NilString)
+				result = append(result, NilString())
 				continue
-			} else {
-				return &Result{Values: result}, err
 			}
+			return &Result{Values: result}, err
 		}
 		result = append(result, val.Value())
 	}
@@ -81,6 +80,7 @@ func ExpiresAt(exp time.Time) SetOpt {
 		return nil
 	}
 }
+
 func TTL(ttl time.Duration) SetOpt {
 	return ExpiresAt(time.Now().Add(ttl))
 }
@@ -127,22 +127,19 @@ func (s *set) Execute(ctx context.Context, storage Storage) (*Result, error) {
 	if s.exists == Exists && keyNotFound {
 		return nil, ErrKeyNotFound
 	}
-
-	var newExpiry *time.Time
+	newExpiry := s.expiresAt
 	if s.keepTTL && prev != nil {
 		newExpiry = prev.ExpiresAt()
 	}
-	newExpiry = s.expiresAt
 
 	err = storage.Set(ctx, s.key, s.value, newExpiry)
-
 	if err != nil {
 		return nil, err
 	}
 
 	if s.get {
 		return NewResult(prev), nil
-	} else {
-		return OkResult(), nil
 	}
+
+	return OkResult(), nil
 }

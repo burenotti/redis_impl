@@ -5,16 +5,15 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
+	"strings"
+
 	"github.com/burenotti/redis_impl/internal/domain/cmd"
 	"github.com/burenotti/redis_impl/internal/service"
 	"github.com/burenotti/redis_impl/pkg/resp"
-	"io"
-	"strings"
 )
 
-var (
-	ErrSyntax = errors.New("syntax error")
-)
+var ErrSyntax = errors.New("syntax error")
 
 type Handler struct {
 	createController func() *service.Controller
@@ -52,7 +51,6 @@ func (h *Handler) Handle(ctx context.Context, req io.Reader, res io.Writer) erro
 		}
 
 		result, err := controller.Run(ctx, command)
-
 		if err != nil {
 			if err := resp.Marshal(res, err.Error()); err != nil {
 				return err
@@ -74,7 +72,6 @@ func (h *Handler) marshalResult(w io.Writer, result *cmd.Result) error {
 }
 
 func (h *Handler) parseNextCommand(r *bufio.Reader) (cmd.Command, error) {
-
 	data, err := resp.Unmarshal(r)
 	if err != nil {
 		return nil, err
@@ -82,12 +79,12 @@ func (h *Handler) parseNextCommand(r *bufio.Reader) (cmd.Command, error) {
 
 	arr, ok := data.([]interface{})
 	if !ok || len(arr) == 0 {
-		return nil, errors.New("syntax error")
+		return nil, ErrSyntax
 	}
 
 	rawName, ok := arr[0].([]byte)
 	if !ok || len(rawName) == 0 {
-		return nil, errors.New("command name must not be empty string")
+		return nil, fmt.Errorf("%w: command name must not be empty string", ErrSyntax)
 	}
 	name := strings.ToUpper(string(rawName))
 

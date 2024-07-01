@@ -2,15 +2,16 @@ package handler
 
 import (
 	"fmt"
-	"github.com/burenotti/redis_impl/internal/domain/cmd"
 	"strings"
 	"time"
+
+	"github.com/burenotti/redis_impl/internal/domain/cmd"
 )
 
 func parseGet(args []interface{}) (cmd.Command, error) {
 	parsed := make([]string, len(args))
-	ok := true
 	for i, arg := range args {
+		var ok bool
 		if parsed[i], ok = asString(arg); !ok {
 			return nil, fmt.Errorf("%w: all arguments must be strings", ErrSyntax)
 		}
@@ -18,16 +19,17 @@ func parseGet(args []interface{}) (cmd.Command, error) {
 	return cmd.Get(parsed...), nil
 }
 
+//nolint:funlen // parsing functions can be long
 func parseSet(args []interface{}) (cmd.Command, error) {
-	if len(args) < 2 {
+	if len(args) < 2 { //nolint:mnd // min amount of arguments key, value
 		return nil, fmt.Errorf("%w: not enough arguments", ErrSyntax)
 	}
 
-	if len(args) > 6 {
+	if len(args) > 6 { //nolint:mnd // max amount of arguments
 		return nil, fmt.Errorf("%w: too many arguments", ErrSyntax)
 	}
 
-	opts := make([]cmd.SetOpt, 0, 3)
+	var opts []cmd.SetOpt
 	key, ok := asString(args[0])
 	if !ok {
 		return nil, fmt.Errorf("%w: key must be a string", ErrSyntax)
@@ -82,7 +84,6 @@ func parseNoArgs(command cmd.Command, args []interface{}) (cmd.Command, error) {
 		return nil, fmt.Errorf("%w: %s does not accept any arguments", ErrSyntax, command.Name())
 	}
 	return command, nil
-
 }
 
 func parsePing(args []interface{}) (cmd.Command, error) {
@@ -107,8 +108,8 @@ func parseUnwatch(args []interface{}) (cmd.Command, error) {
 
 func parseWatch(args []interface{}) (cmd.Command, error) {
 	parsed := make([]string, len(args))
-	ok := true
 	for i, arg := range args {
+		var ok bool
 		if parsed[i], ok = asString(arg); !ok {
 			return nil, fmt.Errorf("%w: all arguments must be strings", ErrSyntax)
 		}
@@ -116,14 +117,14 @@ func parseWatch(args []interface{}) (cmd.Command, error) {
 	return cmd.Watch(parsed...), nil
 }
 
-func parseHello(args []interface{}) (cmd.Command, error) {
+//nolint:unparam // need to implement interface
+func parseHello(_ []interface{}) (cmd.Command, error) {
 	return cmd.Hello(), nil
 }
 
 func asString(i interface{}) (string, bool) {
 	if bytes, ok := i.([]byte); ok {
 		return string(bytes), true
-	} else {
-		return "", false
 	}
+	return "", false
 }

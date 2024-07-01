@@ -4,9 +4,14 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"time"
+
 	"github.com/burenotti/redis_impl/internal/domain/cmd"
 	"github.com/burenotti/redis_impl/internal/storage/memory"
-	"time"
+)
+
+const (
+	defaultUnlockTimeout = 5 * time.Second
 )
 
 var (
@@ -44,7 +49,6 @@ func (s *Controller) Del(ctx context.Context, key string) error {
 }
 
 func (s *Controller) Run(ctx context.Context, c cmd.Command) (res *cmd.Result, err error) {
-
 	if s.inProgress && !c.IsTx() {
 		s.queuedCommands = append(s.queuedCommands, c)
 		return cmd.NewResult("QUEUED"), nil
@@ -60,7 +64,7 @@ func (s *Controller) Run(ctx context.Context, c cmd.Command) (res *cmd.Result, e
 	return res, nil
 }
 
-func (s *Controller) StartTx(ctx context.Context) error {
+func (s *Controller) StartTx(_ context.Context) error {
 	if s.inProgress {
 		return ErrNestedMulti
 	}
@@ -70,7 +74,6 @@ func (s *Controller) StartTx(ctx context.Context) error {
 }
 
 func (s *Controller) RunTx(ctx context.Context) (*cmd.Result, error) {
-
 	if !s.inProgress {
 		return cmd.EmptyResult(), ErrExecWithoutMulti
 	}
@@ -90,7 +93,7 @@ func (s *Controller) RunTx(ctx context.Context) (*cmd.Result, error) {
 	return result, nil
 }
 
-func (s *Controller) DiscardTx(ctx context.Context) error {
+func (s *Controller) DiscardTx(_ context.Context) error {
 	if !s.inProgress {
 		return ErrDiscardWithoutMulti
 	}
@@ -99,7 +102,7 @@ func (s *Controller) DiscardTx(ctx context.Context) error {
 	return nil
 }
 
-func (s *Controller) Unwatch(ctx context.Context) error {
+func (s *Controller) Unwatch(_ context.Context) error {
 	clear(s.watches)
 	return nil
 }
@@ -133,7 +136,7 @@ func atomic(ctx context.Context, c *Controller, f atomicFunc) error {
 	}
 
 	defer func() {
-		unlockCtx, cancel := context.WithTimeout(ctx, 5*time.Second)
+		unlockCtx, cancel := context.WithTimeout(ctx, defaultUnlockTimeout)
 		defer cancel()
 		if err := c.storage.Unlock(unlockCtx); err != nil {
 			panic("failed to unlock controller")

@@ -50,15 +50,14 @@ func (h *Heap[T]) Pop() (T, bool) {
 		var null T
 		return null, false
 	}
-	return heap.Pop(&h.data).(T), true
+	return heap.Pop(&h.data).(T), true //nolint:forcetypeassert // we're sure that type will not raise
 }
 
 func (h *Heap[T]) MustPop() T {
 	if val, ok := h.Pop(); ok {
 		return val
-	} else {
-		panic("can't pop element: heap is empty")
 	}
+	panic("can't pop element: heap is empty")
 }
 
 func (h *Heap[T]) Len() int {
@@ -81,7 +80,7 @@ func (h *container[T]) Swap(i, j int) {
 }
 
 func (h *container[T]) Push(value any) {
-	h.data = append(h.data, value.(T))
+	h.data = append(h.data, value.(T)) //nolint:forcetypeassert // we're sure that type will not raise
 }
 
 func (h *container[T]) Pop() any {

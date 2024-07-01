@@ -1,8 +1,9 @@
-package resp
+package resp_test
 
 import (
 	"bufio"
 	"errors"
+	"github.com/burenotti/redis_impl/pkg/resp"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"io"
@@ -11,6 +12,7 @@ import (
 )
 
 func TestUnmarshal(t *testing.T) {
+	t.Parallel()
 	cases := []struct {
 		Name     string
 		Input    string
@@ -33,7 +35,8 @@ func TestUnmarshal(t *testing.T) {
 		{
 			Name:  "Array",
 			Input: "*4\r\n+abacaba\r\n:32\r\n:42\r\n$3\r\nabc\r\n",
-			Expected: []interface{}{"abacaba",
+			Expected: []interface{}{
+				"abacaba",
 				int64(32),
 				int64(42),
 				[]byte("abc"),
@@ -43,8 +46,9 @@ func TestUnmarshal(t *testing.T) {
 
 	for _, c := range cases {
 		t.Run(c.Name, func(t *testing.T) {
+			t.Parallel()
 			r := bufio.NewReader(strings.NewReader(c.Input))
-			actual, err := Unmarshal(r)
+			actual, err := resp.Unmarshal(r)
 			if err != nil {
 				require.ErrorIs(t, err, c.Error)
 			}
@@ -54,6 +58,7 @@ func TestUnmarshal(t *testing.T) {
 }
 
 func TestMarshal(t *testing.T) {
+	t.Parallel()
 	cases := []struct {
 		Name     string
 		Input    interface{}
@@ -73,18 +78,19 @@ func TestMarshal(t *testing.T) {
 		{
 			Name:     "Array",
 			Expected: "*4\r\n+abacaba\r\n:32\r\n:42\r\n$3\r\nabc\r\n",
-			Input: []interface{}{"abacaba",
+			Input: []interface{}{
+				"abacaba",
 				int64(32),
 				int64(42),
 				[]byte("abc"),
 			},
 		},
 	}
-
 	for _, c := range cases {
 		t.Run(c.Name, func(t *testing.T) {
+			t.Parallel()
 			w := &strings.Builder{}
-			err := Marshal(w, c.Input)
+			err := resp.Marshal(w, c.Input)
 			if err != nil {
 				require.ErrorIs(t, err, c.Error)
 			}

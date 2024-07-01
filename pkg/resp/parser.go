@@ -10,9 +10,7 @@ import (
 	"unsafe"
 )
 
-var (
-	ErrInvalidSyntax = errors.New("invalid syntax")
-)
+var ErrInvalidSyntax = errors.New("invalid syntax")
 
 const (
 	prefixSimpleString = '+'
@@ -22,9 +20,7 @@ const (
 	prefixArray        = '*'
 )
 
-var (
-	ErrMarshal = errors.New("failed to marshal value")
-)
+var ErrMarshal = errors.New("failed to marshal value")
 
 type ReaderPeeker interface {
 	io.Reader
@@ -88,7 +84,7 @@ func unmarshalArray(r ReaderPeeker) ([]interface{}, error) {
 }
 
 func marshalSimpleString(w io.Writer, value string) error {
-	if strings.Index(value, "\r\n") != -1 {
+	if strings.Contains(value, "\r\n") {
 		return fmt.Errorf("%w: simple string contains CRLF", ErrMarshal)
 	}
 	_, err := fmt.Fprintf(w, "+%s\r\n", value)
@@ -126,16 +122,14 @@ func unmarshalInt[T Integer](r ReaderPeeker) (T, error) {
 	}
 
 	strInt := string(data[1:])
-	bitSize := int(unsafe.Sizeof(value)) * 8
+	bitSize := int(unsafe.Sizeof(value)) * 8 //nolint:mnd // 8 bits in byte
 	switch any(value).(type) {
 	case int, int64, int32, int16, int8:
-		var i int64
-		i, err = strconv.ParseInt(strInt, 10, bitSize)
-		return T(i), nil
+		i, err := strconv.ParseInt(strInt, 10, bitSize)
+		return T(i), err
 	case uint, uint64, uint32, uint16, uint8:
-		var i uint64
-		i, err = strconv.ParseUint(strInt, 10, bitSize)
-		return T(i), nil
+		i, err := strconv.ParseUint(strInt, 10, bitSize)
+		return T(i), err
 	default:
 		panic("never")
 	}
@@ -143,7 +137,7 @@ func unmarshalInt[T Integer](r ReaderPeeker) (T, error) {
 
 func marshalError(w io.Writer, value error) error {
 	data := value.Error()
-	if strings.Index(data, "\r\n") != -1 {
+	if strings.Contains(data, "\r\n") {
 		return fmt.Errorf("%w: error contains CRLF", ErrMarshal)
 	}
 	_, err := fmt.Fprintf(w, "-%s\r\n", data)
@@ -158,7 +152,7 @@ func unmarshalError(r ReaderPeeker) (error, error) {
 	if len(data) < 1 || data[0] != prefixError {
 		return nil, fmt.Errorf("%w: error string must start with '-'", ErrInvalidSyntax)
 	}
-	return errors.New(string(data[1:])), nil
+	return errors.New(string(data[1:])), nil //nolint:err113 // may return errors
 }
 
 func marshalBulkString(w io.Writer, val []byte) error {
@@ -193,7 +187,7 @@ func unmarshalBulkString(r ReaderPeeker) ([]byte, error) {
 		return []byte{}, nil
 	}
 
-	rawData := make([]byte, size+2)
+	rawData := make([]byte, size+2) //nolint:mnd // 2 is length of "\r\n"
 	if n, err := r.Read(rawData); err != nil || n != len(rawData) {
 		return nil, fmt.Errorf("%w: can't read enoguh data", ErrInvalidSyntax)
 	}
@@ -251,7 +245,7 @@ func marshalAny(w io.Writer, value interface{}) error {
 }
 
 func readUntilCRLF(r ReaderPeeker) ([]byte, error) {
-	result := make([]byte, 0, 32)
+	result := make([]byte, 0, 32) //nolint:mnd // random value
 	buf := make([]byte, 1)
 	for {
 		if _, err := r.Read(buf); err != nil {

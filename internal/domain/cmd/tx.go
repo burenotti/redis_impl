@@ -36,11 +36,11 @@ func (e *exec) Name() string {
 }
 
 func (e *exec) Execute(ctx context.Context, storage Storage) (*Result, error) {
-	if res, err := storage.RunTx(ctx); err == nil {
-		return res, nil
-	} else {
+	res, err := storage.RunTx(ctx)
+	if err != nil {
 		return NewResult(err), err
 	}
+	return res, nil
 }
 
 type discard struct {

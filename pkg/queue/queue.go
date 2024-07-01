@@ -63,9 +63,8 @@ func (q *Queue[T]) Pop() (T, bool) {
 func (q *Queue[T]) MustPop() T {
 	if v, ok := q.Pop(); ok {
 		return v
-	} else {
-		panic("queue is empty")
 	}
+	panic("queue is empty")
 }
 
 func (q *Queue[T]) Peek() (T, bool) {

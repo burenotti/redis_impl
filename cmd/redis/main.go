@@ -3,20 +3,19 @@ package main
 import (
 	"errors"
 	"flag"
+	"log/slog"
+	"os"
+	"os/signal"
+	"syscall"
+
 	"github.com/burenotti/redis_impl/internal/config"
 	"github.com/burenotti/redis_impl/internal/handler"
 	"github.com/burenotti/redis_impl/internal/server"
 	"github.com/burenotti/redis_impl/internal/service"
 	"github.com/burenotti/redis_impl/internal/storage/memory"
-	"log/slog"
-	"os"
-	"os/signal"
-	"syscall"
 )
 
-var (
-	configPath string
-)
+var configPath string
 
 func main() {
 	notify := make(chan os.Signal, 1)
@@ -34,7 +33,7 @@ func main() {
 	cfg := config.MustLoad(configPath)
 
 	srv := initServer(logger, cfg)
-	
+
 	srvDone := make(chan error, 1)
 	go func() {
 		if err := srv.Run(); err != nil {
@@ -63,7 +62,6 @@ func main() {
 	} else {
 		logger.Info("Server gracefully stopped")
 	}
-
 }
 
 func initServer(logger *slog.Logger, cfg *config.Config) *server.Server {

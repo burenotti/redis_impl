@@ -61,7 +61,7 @@ func (s *Storage) Unlock(ctx context.Context) error {
 	}
 }
 
-func (s *Storage) Set(ctx context.Context, key string, value interface{}, expiresAt *time.Time) error {
+func (s *Storage) Set(_ context.Context, key string, value interface{}, expiresAt *time.Time) error {
 	prevRev := s.revision(key)
 	s.kv[key] = &Entry{
 		key:       key,
@@ -72,7 +72,7 @@ func (s *Storage) Set(ctx context.Context, key string, value interface{}, expire
 	return nil
 }
 
-func (s *Storage) Get(ctx context.Context, key string) (cmd.Value, error) {
+func (s *Storage) Get(_ context.Context, key string) (cmd.Value, error) {
 	e, ok := s.kv[key]
 	if !ok {
 		return nil, cmd.ErrKeyNotFound
@@ -80,7 +80,7 @@ func (s *Storage) Get(ctx context.Context, key string) (cmd.Value, error) {
 	return e, nil
 }
 
-func (s *Storage) Del(ctx context.Context, key string) error {
+func (s *Storage) Del(_ context.Context, key string) error {
 	if _, ok := s.kv[key]; !ok {
 		return cmd.ErrKeyNotFound
 	}
