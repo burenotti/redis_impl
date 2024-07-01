@@ -1,3 +1,5 @@
+//go:generate mockgen -source interface.go -destination mock_test.go -package cmd_test
+
 package cmd
 
 import (
@@ -11,7 +13,6 @@ var (
 	ErrKeyExists   = errors.New("key already exists")
 )
 
-//go:generate mockery --name Storage
 type Storage interface {
 	Set(ctx context.Context, key string, value interface{}, expiresAt *time.Time) error
 	Get(ctx context.Context, key string) (Value, error)

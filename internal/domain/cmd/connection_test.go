@@ -1,11 +1,14 @@
-package cmd
+package cmd_test
 
 import (
 	"context"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 	"testing"
 	"time"
+
+	"github.com/burenotti/redis_impl/internal/domain/cmd"
+	"github.com/golang/mock/gomock"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 type mockValue struct {
@@ -27,29 +30,39 @@ func (m *mockValue) Revision() uint64 {
 }
 
 func TestPing(t *testing.T) {
-	ctx := context.Background()
-	storage := NewMockStorage(t)
+	t.Parallel()
+	ctl := gomock.NewController(t)
+	defer ctl.Finish()
 
-	cmd := Ping()
-	assert.Equal(t, PING, cmd.Name())
-	res, err := cmd.Execute(ctx, storage)
+	storage := NewMockStorage(ctl)
+
+	ctx := context.Background()
+
+	ping := cmd.Ping()
+	assert.Equal(t, cmd.PING, ping.Name())
+	res, err := ping.Execute(ctx, storage)
 	assert.NoError(t, err)
-	assert.Equal(t, res, Pong)
+	assert.Equal(t, res, cmd.ResultPong())
 }
 
 func TestGet(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
-	storage := NewMockStorage(t)
+	ctl := gomock.NewController(t)
+	defer ctl.Finish()
+
+	storage := NewMockStorage(ctl)
+
 	firstName := &mockValue{value: []byte("artem")}
 	lastName := &mockValue{value: []byte("burenin")}
-	expected := NewResult([]byte("artem"), []byte("burenin"), NilString)
+	expected := cmd.NewResult([]byte("artem"), []byte("burenin"), cmd.NilString())
 
-	storage.On("Get", ctx, "first_name").Return(firstName, nil).Once()
-	storage.On("Get", ctx, "last_name").Return(lastName, nil).Once()
-	storage.On("Get", ctx, "middle_name").Return(nil, ErrKeyNotFound).Once()
+	storage.EXPECT().Get(ctx, "first_name").Return(firstName, nil)
+	storage.EXPECT().Get(ctx, "last_name").Return(lastName, nil)
+	storage.EXPECT().Get(ctx, "middle_name").Return(nil, cmd.ErrKeyNotFound)
 
-	cmd := Get("first_name", "last_name", "middle_name")
-	res, err := cmd.Execute(ctx, storage)
+	get := cmd.Get("first_name", "last_name", "middle_name")
+	res, err := get.Execute(ctx, storage)
 	require.NoError(t, err)
 	assert.Equal(t, expected, res)
 }
