@@ -4,6 +4,8 @@ import (
 	"context"
 )
 
+var Pong = NewResult("PONG")
+
 func Ping() Command {
 	return &ping{}
 }
@@ -13,7 +15,7 @@ type ping struct {
 }
 
 func (p *ping) Execute(ctx context.Context, storage Storage) (*Result, error) {
-	return NewResult("PONG"), nil
+	return Pong, nil
 }
 
 func (p *ping) Name() string {
