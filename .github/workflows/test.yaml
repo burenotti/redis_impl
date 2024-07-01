@@ -47,8 +47,8 @@ jobs:
           auth: ${{ secrets.GIST_TOKEN }}
           gistID: ${{ vars.GIST_ID }}
           filename: ${{ env.REPO_NAME }}__${{ env.BRANCH_NAME }}.json
-          label: Coverage
-          message: ${{ env.COVERAGE }}
+          label: Code coverage
+          message: '${{ env.COVERAGE }}%'
           minColorRange: 50
           maxColorRange: 90
           valColorRange: ${{ env.COVERAGE }}
