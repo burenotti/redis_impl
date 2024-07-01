@@ -1,6 +1,7 @@
 # My Redis Server
 
 ![coverage badge](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/burenotti/cdabc4087e0fb9c2ec9c827cef65974e/raw/redis_impl__refs_heads_master.json)
+**👈 I will fix it. I promise...**
 
 This is a simple redis implementation written in Go.
 It is developed for only for educational purposes and not supposed to be used in real world projects.
