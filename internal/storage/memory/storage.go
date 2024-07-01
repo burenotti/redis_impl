@@ -2,7 +2,7 @@ package memory
 
 import (
 	"context"
-	"github.com/burenotti/redis_impl/internal/domain"
+	"github.com/burenotti/redis_impl/internal/domain/cmd"
 	"time"
 )
 
@@ -72,17 +72,17 @@ func (s *Storage) Set(ctx context.Context, key string, value interface{}, expire
 	return nil
 }
 
-func (s *Storage) Get(ctx context.Context, key string) (domain.Value, error) {
+func (s *Storage) Get(ctx context.Context, key string) (cmd.Value, error) {
 	e, ok := s.kv[key]
 	if !ok {
-		return nil, domain.ErrKeyNotFound
+		return nil, cmd.ErrKeyNotFound
 	}
 	return e, nil
 }
 
 func (s *Storage) Del(ctx context.Context, key string) error {
 	if _, ok := s.kv[key]; !ok {
-		return domain.ErrKeyNotFound
+		return cmd.ErrKeyNotFound
 	}
 	delete(s.kv, key)
 	return nil

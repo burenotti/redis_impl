@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/burenotti/redis_impl/internal/domain"
 	"time"
 )
 
@@ -120,11 +119,11 @@ func (s *set) Execute(ctx context.Context, storage Storage) (*Result, error) {
 	}
 
 	if s.exists == NotExists && !keyNotFound {
-		return nil, domain.ErrKeyExists
+		return nil, ErrKeyExists
 	}
 
 	if s.exists == Exists && keyNotFound {
-		return nil, domain.ErrKeyNotFound
+		return nil, ErrKeyNotFound
 	}
 
 	var newExpiry *time.Time

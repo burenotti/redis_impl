@@ -3,8 +3,6 @@ package cmd
 import (
 	"context"
 	"errors"
-	"github.com/burenotti/redis_impl/internal/domain"
-	"time"
 )
 
 const (
@@ -20,16 +18,10 @@ const (
 	HELLO   = "HELLO"
 )
 
-type Storage interface {
-	Set(ctx context.Context, key string, value interface{}, expiresAt *time.Time) error
-	Get(ctx context.Context, key string) (domain.Value, error)
-	Del(ctx context.Context, key string) error
-	StartTx(ctx context.Context) error
-	RunTx(ctx context.Context) (*Result, error)
-	DiscardTx(ctx context.Context) error
-	Watch(ctx context.Context, keys ...string) error
-	Unwatch(ctx context.Context) error
-}
+var (
+	NilString = []byte(nil)
+	NilArray  = []interface{}(nil)
+)
 
 var (
 	ErrInvalidOpt = errors.New("invalid option")

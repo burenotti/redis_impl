@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/burenotti/redis_impl/internal/domain"
 	"github.com/burenotti/redis_impl/internal/domain/cmd"
 	"github.com/burenotti/redis_impl/internal/storage/memory"
 	"time"
@@ -36,7 +35,7 @@ func (s *Controller) Set(ctx context.Context, key string, value interface{}, exp
 	return s.storage.Set(ctx, key, value, expiresAt)
 }
 
-func (s *Controller) Get(ctx context.Context, key string) (domain.Value, error) {
+func (s *Controller) Get(ctx context.Context, key string) (cmd.Value, error) {
 	return s.storage.Get(ctx, key)
 }
 
@@ -109,7 +108,7 @@ func (s *Controller) Watch(ctx context.Context, keys ...string) error {
 	return atomic(ctx, s, func(ctx context.Context) error {
 		for _, key := range keys {
 			entry, err := s.storage.Get(ctx, key)
-			if errors.Is(err, domain.ErrKeyNotFound) {
+			if errors.Is(err, cmd.ErrKeyNotFound) {
 				s.watches[key] = 0
 			}
 			if err != nil {
