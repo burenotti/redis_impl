@@ -23,10 +23,12 @@ func (g get) Execute(ctx context.Context, storage Storage) (*Result, error) {
 	for _, key := range g.Keys {
 		val, err := storage.Get(ctx, key)
 		if err != nil {
-			if errors.Is(err, domain.ErrKeyNotFound) {
-				return NewResult([]byte(nil)), nil
+			if errors.Is(err, ErrKeyNotFound) {
+				result = append(result, NilString)
+				continue
+			} else {
+				return &Result{Values: result}, err
 			}
-			return &Result{Values: result}, err
 		}
 		result = append(result, val.Value())
 	}
