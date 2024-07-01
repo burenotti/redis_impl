@@ -4,7 +4,7 @@ COVERAGE_VAR = COVERAGE
 all: clean build test
 
 _init:
-	@[[ ! -d build ]] && mkdir build || true
+	@test ! -d build && mkdir build || true
 
 build: _init
 	GOOS=darwin GOARCH=arm64 go build -o build/$(BINARY_NAME)_darwin_arm64 -trimpath -ldflags="-s -w" ./cmd/redis/
@@ -14,7 +14,6 @@ build: _init
 test: _init
 	go test -race -coverprofile ./build/coverage.out ./...
 	go tool cover -var $(COVERAGE_VAR) -html ./build/coverage.out -o ./build/coverage.html ; \
-	echo "$$$(COVERAGE_VAR)"
 
 clean:
 	rm -rf ./build/
