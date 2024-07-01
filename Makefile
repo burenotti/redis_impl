@@ -1,10 +1,16 @@
 BINARY_NAME = redis
 COVERAGE_VAR = COVERAGE
 
+
+BUILD_TAGS = "integration,unit"
+unit-tests: BUILD_TAGS = "unit"
+all-tests: BUILD_TAGS = "disabled,integration,unit"
+
 all: clean build test
 
-_init:
-	@test ! -d build && mkdir build || true
+run:
+	go run ./cmd/redis -config ./config/config.dist.yaml
+
 
 build: _init
 	GOOS=darwin GOARCH=arm64 go build -o build/$(BINARY_NAME)_darwin_arm64 -trimpath -ldflags="-s -w" ./cmd/redis/
@@ -12,11 +18,19 @@ build: _init
 	GOOS=windows GOARCH=amd64 go build -o build/$(BINARY_NAME)_windows_amd64.exe -trimpath -ldflags="-s -w" ./cmd/redis/
 
 test: _init
-	go test -race -coverprofile ./build/coverage.out ./...
-	go tool cover -var $(COVERAGE_VAR) -html ./build/coverage.out -o ./build/coverage.html ; \
+	go test -tags=$(BUILD_TAGS) -race -coverprofile ./build/coverage.out ./...
+	go tool cover -html ./build/coverage.out -o ./build/coverage.html
+
+
+unit-tests: test
+
+
+all-tests: test
+
 
 clean:
 	rm -rf ./build/
 
-run:
-	go run ./cmd/redis -config ./config/config.dist.yaml
+
+_init:
+	@test ! -d build && mkdir build || true
