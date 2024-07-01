@@ -32,18 +32,10 @@ func main() {
 	parseFlags()
 
 	cfg := config.MustLoad(configPath)
-	store := memory.New()
-	handle := handler.New(func() *service.Controller {
-		return service.New(store)
-	})
-	srv := server.Default(handle)
-	srv.Host = cfg.Server.Host
-	srv.Port = cfg.Server.Port
-	srv.MaxConnections = cfg.Server.MaxConnections
-	srv.Logger = logger
 
+	srv := initServer(logger, cfg)
+	
 	srvDone := make(chan error, 1)
-
 	go func() {
 		if err := srv.Run(); err != nil {
 			srvDone <- err
@@ -72,6 +64,19 @@ func main() {
 		logger.Info("Server gracefully stopped")
 	}
 
+}
+
+func initServer(logger *slog.Logger, cfg *config.Config) *server.Server {
+	store := memory.New()
+	handle := handler.New(func() *service.Controller {
+		return service.New(store)
+	})
+	srv := server.Default(handle)
+	srv.Host = cfg.Server.Host
+	srv.Port = cfg.Server.Port
+	srv.MaxConnections = cfg.Server.MaxConnections
+	srv.Logger = logger
+	return srv
 }
 
 func parseFlags() {
