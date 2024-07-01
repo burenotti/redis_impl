@@ -143,6 +143,6 @@ func (s *set) Execute(ctx context.Context, storage Storage) (*Result, error) {
 	if s.get {
 		return NewResult(prev), nil
 	} else {
-		return NewResult("OK"), nil
+		return OkResult(), nil
 	}
 }

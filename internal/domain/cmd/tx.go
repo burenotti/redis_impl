@@ -59,7 +59,7 @@ func (d *discard) Execute(ctx context.Context, storage Storage) (*Result, error)
 	if err := storage.DiscardTx(ctx); err != nil {
 		return NewResult(err), err
 	}
-	return NewResult("OK"), nil
+	return OkResult(), nil
 }
 
 type watch struct {
@@ -81,7 +81,7 @@ func (w *watch) Execute(ctx context.Context, storage Storage) (*Result, error) {
 	if err := storage.Watch(ctx, w.keys...); err != nil {
 		return NewResult(err), err
 	}
-	return NewResult("OK"), nil
+	return OkResult(), nil
 }
 
 type unwatch struct {
@@ -100,5 +100,5 @@ func (u *unwatch) Execute(ctx context.Context, storage Storage) (*Result, error)
 	if err := storage.Unwatch(ctx); err != nil {
 		return NewResult(err), err
 	}
-	return NewResult("OK"), nil
+	return OkResult(), nil
 }

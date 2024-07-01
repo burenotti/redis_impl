@@ -39,6 +39,10 @@ func EmptyResult() *Result {
 	return &Result{Values: []interface{}(nil)}
 }
 
+func OkResult() *Result {
+	return NewResult("OK")
+}
+
 type Command interface {
 	Name() string
 	Execute(ctx context.Context, storage Storage) (*Result, error)
