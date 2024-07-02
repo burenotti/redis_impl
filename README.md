@@ -14,10 +14,13 @@ The main goal of this project is to implement complicated parts of redis mainly 
 - [x] Pipelining
 - [x] GET/SET
 - [x] Transactions
-- [ ] Keys expiration
+- [x] Keys expiration
 - [ ] Key eviction
 - [ ] Key eviction policies
-- [ ] Other data structures ()
+- [ ] Data structures:
+    - [ ] List
+    - [ ] Sorted set
+    - [ ] Hash map
 - [ ] Persistence:
     - [ ] Append only file
         - [ ] AOF compression
