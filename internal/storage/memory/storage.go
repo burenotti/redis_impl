@@ -3,6 +3,7 @@ package memory
 import (
 	"context"
 	"github.com/burenotti/redis_impl/internal/domain/cmd"
+	"github.com/burenotti/redis_impl/pkg/heap"
 	"time"
 )
 
@@ -32,14 +33,16 @@ func (e *Entry) Revision() uint64 {
 }
 
 type Storage struct {
-	kv   map[string]*Entry
-	lock chan struct{}
+	kv          map[string]*Entry
+	lock        chan struct{}
+	expirations *heap.Heap[string]
 }
 
 func New() *Storage {
 	return &Storage{
-		kv:   make(map[string]*Entry),
-		lock: make(chan struct{}, 1),
+		kv:          make(map[string]*Entry),
+		lock:        make(chan struct{}, 1),
+		expirations: heap.OfOrdered[string](),
 	}
 }
 
@@ -77,10 +80,20 @@ func (s *Storage) Get(_ context.Context, key string) (cmd.Value, error) {
 	if !ok {
 		return nil, cmd.ErrKeyNotFound
 	}
+	if e.expiresAt != nil && e.expiresAt.Before(time.Now()) {
+		if err := s.del(key); err != nil {
+			panic("concurrent write")
+		}
+		return e, cmd.ErrExpired
+	}
 	return e, nil
 }
 
 func (s *Storage) Del(_ context.Context, key string) error {
+	return s.del(key)
+}
+
+func (s *Storage) del(key string) error {
 	if _, ok := s.kv[key]; !ok {
 		return cmd.ErrKeyNotFound
 	}

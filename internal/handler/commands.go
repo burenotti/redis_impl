@@ -2,6 +2,7 @@ package handler
 
 import (
 	"fmt"
+	"strconv"
 	"strings"
 	"time"
 
@@ -56,8 +57,9 @@ func parseSet(args []interface{}) (cmd.Command, error) {
 			if i == len(args)-1 {
 				return nil, fmt.Errorf("%w: need value for %s", ErrSyntax, val)
 			}
-			expiry, ok := args[i+1].(int64)
-			if !ok {
+			i++
+			expiry, err := parseInt(args[i])
+			if err != nil {
 				return nil, fmt.Errorf("%w: %s argument must be an integer", ErrSyntax, val)
 			}
 			switch val {
@@ -77,6 +79,19 @@ func parseSet(args []interface{}) (cmd.Command, error) {
 	}
 
 	return cmd.Set(key, value, opts...)
+}
+
+func parseInt(arg interface{}) (int64, error) {
+	switch v := arg.(type) {
+	case int64:
+		return v, nil
+	case []byte:
+		return strconv.ParseInt(string(v), 10, 64)
+	case string:
+		return strconv.ParseInt(v, 10, 6)
+	default:
+		return 0, strconv.ErrSyntax
+	}
 }
 
 func parseNoArgs(command cmd.Command, args []interface{}) (cmd.Command, error) {

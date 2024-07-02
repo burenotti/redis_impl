@@ -5,12 +5,14 @@ package cmd
 import (
 	"context"
 	"errors"
+	"fmt"
 	"time"
 )
 
 var (
 	ErrKeyNotFound = errors.New("key not found")
 	ErrKeyExists   = errors.New("key already exists")
+	ErrExpired     = fmt.Errorf("%w: expired", ErrKeyNotFound)
 )
 
 type Storage interface {
