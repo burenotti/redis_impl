@@ -16,7 +16,7 @@ func (m *multi) Name() string {
 	return MULTI
 }
 
-func (m *multi) Execute(ctx context.Context, storage Storage) (*Result, error) {
+func (m *multi) Execute(ctx context.Context, storage Client) (*Result, error) {
 	if err := storage.StartTx(ctx); err != nil {
 		return NewResult(err), err
 	}
@@ -35,8 +35,8 @@ func (e *exec) Name() string {
 	return EXEC
 }
 
-func (e *exec) Execute(ctx context.Context, storage Storage) (*Result, error) {
-	res, err := storage.RunTx(ctx)
+func (e *exec) Execute(ctx context.Context, storage Client) (*Result, error) {
+	res, err := storage.ExecTx(ctx)
 	if err != nil {
 		return NewResult(err), err
 	}
@@ -55,7 +55,7 @@ func (d *discard) Name() string {
 	return DISCARD
 }
 
-func (d *discard) Execute(ctx context.Context, storage Storage) (*Result, error) {
+func (d *discard) Execute(ctx context.Context, storage Client) (*Result, error) {
 	if err := storage.DiscardTx(ctx); err != nil {
 		return NewResult(err), err
 	}
@@ -77,7 +77,7 @@ func (w *watch) Name() string {
 	return WATCH
 }
 
-func (w *watch) Execute(ctx context.Context, storage Storage) (*Result, error) {
+func (w *watch) Execute(ctx context.Context, storage Client) (*Result, error) {
 	if err := storage.Watch(ctx, w.keys...); err != nil {
 		return NewResult(err), err
 	}
@@ -96,7 +96,7 @@ func (u *unwatch) Name() string {
 	return UNWATCH
 }
 
-func (u *unwatch) Execute(ctx context.Context, storage Storage) (*Result, error) {
+func (u *unwatch) Execute(ctx context.Context, storage Client) (*Result, error) {
 	if err := storage.Unwatch(ctx); err != nil {
 		return NewResult(err), err
 	}

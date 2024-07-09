@@ -15,6 +15,10 @@ import (
 	"github.com/burenotti/redis_impl/internal/storage/memory"
 )
 
+const (
+	walSize = 1024
+)
+
 var configPath string
 
 func main() {
@@ -32,7 +36,14 @@ func main() {
 
 	cfg := config.MustLoad(configPath)
 
-	srv := initServer(logger, cfg)
+	store := memory.New()
+	redis := service.NewService(store, walSize)
+	go func() {
+		redis.Run()
+	}()
+	defer redis.Stop()
+
+	srv := initServer(logger, cfg, redis)
 
 	srvDone := make(chan error, 1)
 	go func() {
@@ -64,10 +75,9 @@ func main() {
 	}
 }
 
-func initServer(logger *slog.Logger, cfg *config.Config) *server.Server {
-	store := memory.New()
-	handle := handler.New(func() *service.Controller {
-		return service.New(store)
+func initServer(logger *slog.Logger, cfg *config.Config, redis *service.RedisService) *server.Server {
+	handle := handler.New(func() *service.Client {
+		return service.NewClient(redis)
 	})
 	srv := server.Default(handle)
 	srv.Host = cfg.Server.Host

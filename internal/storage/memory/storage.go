@@ -46,42 +46,25 @@ func New() *Storage {
 	}
 }
 
-func (s *Storage) Lock(ctx context.Context) error {
-	select {
-	case s.lock <- struct{}{}:
-		return nil
-	case <-ctx.Done():
-		return ctx.Err()
-	}
-}
-
-func (s *Storage) Unlock(ctx context.Context) error {
-	select {
-	case <-s.lock:
-		return nil
-	case <-ctx.Done():
-		return ctx.Err()
-	}
-}
-
-func (s *Storage) Set(_ context.Context, key string, value interface{}, expiresAt *time.Time) error {
+func (s *Storage) Set(_ context.Context, key string, value interface{}, expiresAt *time.Time) (cmd.Entry, error) {
 	prevRev := s.revision(key)
-	s.kv[key] = &Entry{
+	e := &Entry{
 		key:       key,
 		value:     value,
 		revision:  prevRev + 1,
 		expiresAt: expiresAt,
 	}
-	return nil
+	s.kv[key] = e
+	return e, nil
 }
 
-func (s *Storage) Get(_ context.Context, key string) (cmd.Value, error) {
+func (s *Storage) Get(_ context.Context, key string) (cmd.Entry, error) {
 	e, ok := s.kv[key]
 	if !ok {
 		return nil, cmd.ErrKeyNotFound
 	}
 	if e.expiresAt != nil && e.expiresAt.Before(time.Now()) {
-		if err := s.del(key); err != nil {
+		if _, err := s.del(key); err != nil {
 			panic("concurrent write")
 		}
 		return e, cmd.ErrExpired
@@ -89,16 +72,17 @@ func (s *Storage) Get(_ context.Context, key string) (cmd.Value, error) {
 	return e, nil
 }
 
-func (s *Storage) Del(_ context.Context, key string) error {
+func (s *Storage) Del(_ context.Context, key string) (cmd.Entry, error) {
 	return s.del(key)
 }
 
-func (s *Storage) del(key string) error {
-	if _, ok := s.kv[key]; !ok {
-		return cmd.ErrKeyNotFound
+func (s *Storage) del(key string) (cmd.Entry, error) {
+	e, ok := s.kv[key]
+	if !ok {
+		return nil, cmd.ErrKeyNotFound
 	}
 	delete(s.kv, key)
-	return nil
+	return e, nil
 }
 
 func (s *Storage) revision(key string) uint64 {

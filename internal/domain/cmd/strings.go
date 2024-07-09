@@ -18,8 +18,9 @@ type get struct {
 	Keys []string
 }
 
-func (g get) Execute(ctx context.Context, storage Storage) (*Result, error) {
+func (g get) Execute(ctx context.Context, c Client) (*Result, error) {
 	result := make([]interface{}, 0, len(g.Keys))
+	storage := c.Storage()
 	for _, key := range g.Keys {
 		val, err := storage.Get(ctx, key)
 		if err != nil {
@@ -73,7 +74,7 @@ func KeepTTL() SetOpt {
 
 func ExpiresAt(exp time.Time) SetOpt {
 	return func(s *set) error {
-		if s.expiresAt != nil {
+		if !s.expiresAt.IsZero() {
 			return fmt.Errorf("%w: expiration provided more than once", ErrInvalidOpt)
 		}
 		s.expiresAt = &exp
@@ -113,8 +114,8 @@ func (s *set) Name() string {
 	return SET
 }
 
-func (s *set) Execute(ctx context.Context, storage Storage) (*Result, error) {
-	prev, err := storage.Get(ctx, s.key)
+func (s *set) Execute(ctx context.Context, c Client) (*Result, error) {
+	prev, err := c.Storage().Get(ctx, s.key)
 	keyNotFound := prev == nil
 	if err != nil && !keyNotFound {
 		return nil, err
@@ -132,7 +133,7 @@ func (s *set) Execute(ctx context.Context, storage Storage) (*Result, error) {
 		newExpiry = prev.ExpiresAt()
 	}
 
-	err = storage.Set(ctx, s.key, s.value, newExpiry)
+	_, err = c.Storage().Set(ctx, s.key, s.value, newExpiry)
 	if err != nil {
 		return nil, err
 	}

@@ -6,16 +6,17 @@ import (
 )
 
 const (
-	GET     = "GET"
-	SET     = "SET"
-	PING    = "PING"
-	ECHO    = "ECHO"
-	MULTI   = "MULTI"
-	EXEC    = "EXEC"
-	DISCARD = "DISCARD"
-	WATCH   = "WATCH"
-	UNWATCH = "UNWATCH"
-	HELLO   = "HELLO"
+	GET      = "GET"
+	SET      = "SET"
+	PING     = "PING"
+	ECHO     = "ECHO"
+	MULTI    = "MULTI"
+	EXEC     = "EXEC"
+	DISCARD  = "DISCARD"
+	WATCH    = "WATCH"
+	UNWATCH  = "UNWATCH"
+	HELLO    = "HELLO"
+	REPLCONF = "REPLCONF"
 )
 
 func NilString() []byte {
@@ -46,7 +47,7 @@ func OkResult() *Result {
 
 type Command interface {
 	Name() string
-	Execute(ctx context.Context, storage Storage) (*Result, error)
+	Execute(ctx context.Context, storage Client) (*Result, error)
 	IsModifying() bool
 	IsTx() bool
 }

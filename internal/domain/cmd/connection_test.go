@@ -34,7 +34,7 @@ func TestPing(t *testing.T) {
 	ctl := gomock.NewController(t)
 	defer ctl.Finish()
 
-	storage := NewMockStorage(ctl)
+	storage := NewMockClient(ctl)
 
 	ctx := context.Background()
 
@@ -51,18 +51,20 @@ func TestGet(t *testing.T) {
 	ctl := gomock.NewController(t)
 	defer ctl.Finish()
 
+	client := NewMockClient(ctl)
 	storage := NewMockStorage(ctl)
 
 	firstName := &mockValue{value: []byte("artem")}
 	lastName := &mockValue{value: []byte("burenin")}
 	expected := cmd.NewResult([]byte("artem"), []byte("burenin"), cmd.NilString())
 
+	client.EXPECT().Storage().Return(storage)
 	storage.EXPECT().Get(ctx, "first_name").Return(firstName, nil)
 	storage.EXPECT().Get(ctx, "last_name").Return(lastName, nil)
 	storage.EXPECT().Get(ctx, "middle_name").Return(nil, cmd.ErrKeyNotFound)
 
 	get := cmd.Get("first_name", "last_name", "middle_name")
-	res, err := get.Execute(ctx, storage)
+	res, err := get.Execute(ctx, client)
 	require.NoError(t, err)
 	assert.Equal(t, expected, res)
 }

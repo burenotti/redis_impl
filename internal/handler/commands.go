@@ -143,3 +143,7 @@ func asString(i interface{}) (string, bool) {
 	}
 	return "", false
 }
+
+func parseReplConf() {
+
+}

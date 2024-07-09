@@ -16,11 +16,11 @@ import (
 var ErrSyntax = errors.New("syntax error")
 
 type Handler struct {
-	createController func() *service.Controller
+	createController func() *service.Client
 	commands         map[string]func([]interface{}) (cmd.Command, error)
 }
 
-func New(createController func() *service.Controller) *Handler {
+func New(createController func() *service.Client) *Handler {
 	h := &Handler{
 		createController: createController,
 		commands: map[string]func([]interface{}) (cmd.Command, error){

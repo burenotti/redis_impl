@@ -16,7 +16,7 @@ type ping struct {
 	baseCommand
 }
 
-func (p *ping) Execute(_ context.Context, _ Storage) (*Result, error) {
+func (p *ping) Execute(_ context.Context, _ Client) (*Result, error) {
 	return ResultPong(), nil
 }
 
@@ -36,7 +36,7 @@ func (h *hello) Name() string {
 	return HELLO
 }
 
-func (h *hello) Execute(_ context.Context, _ Storage) (*Result, error) {
+func (h *hello) Execute(_ context.Context, _ Client) (*Result, error) {
 	return NewResult([]interface{}{
 		"server", "redis",
 		"version", "3.0.0",
