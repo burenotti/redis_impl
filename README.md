@@ -61,11 +61,10 @@ docker run -v ./config.yaml:/etc/redis/config.yaml -it -p 6379:6379 burenotti/re
 
 This implementation is configured using yaml file, that is passed to server using `-config` parameter.
 
-```yaml
-server:
-  host: 0.0.0.0
-  port: 7379
-  shutdown_timeout: 10s
+```redis
+bind 127.0.0.1
+port 8379
+shutdown_timeout 5
 ```
 
 ## Implementation details
