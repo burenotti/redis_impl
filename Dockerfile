@@ -20,8 +20,8 @@ RUN --mount=type=cache,target=/go/pkg/mod/ \
 FROM gcr.io/distroless/base-debian12:nonroot AS final
 
 COPY --from=build /bin/redis /bin/
-COPY config/config.dist.yaml /etc/redis/config.yaml
+COPY config/redis.conf /etc/redis/redis.conf
 
 EXPOSE 6379
 
-ENTRYPOINT [ "/bin/redis", "-config", "/etc/redis/config.yaml" ]
+ENTRYPOINT [ "/bin/redis", "-config", "/etc/redis/redis.conf" ]

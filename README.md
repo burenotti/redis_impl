@@ -54,7 +54,7 @@ cd redis_impl
 docker build -t burenotti/redis .
 
 # Run built image 
-docker run -v ./config.yaml:/etc/redis/config.yaml -it -p 6379:6379 burenotti/redis_impl
+docker run -v ./config/redis.conf:/etc/redis/redis.conf -it -p 6379:6379 burenotti/redis_impl
 ```
 
 ## Configuring
