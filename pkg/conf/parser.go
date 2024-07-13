@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"os"
 	"strings"
 	"unicode"
 	"unicode/utf8"
@@ -21,15 +22,16 @@ func loadModule(data map[string][]string, args []string) error {
 }
 
 func include(data map[string][]string, args []string) error {
-	return fmt.Errorf("%w: includes are not yet supported", ErrNotSupported)
-}
-
-var (
-	keywords = map[string]func(data map[string][]string, args []string) error{
-		"include":    include,
-		"loadmodule": loadModule,
+	if len(args) != 1 {
+		return fmt.Errorf("%w: include requires exactly one argument", ErrSyntax)
 	}
-)
+	file, err := os.Open(args[0])
+	if err != nil {
+		return err
+	}
+
+	return parse(data, file)
+}
 
 func parse(data map[string][]string, r io.Reader) error {
 	scanner := bufio.NewScanner(r)
@@ -63,6 +65,11 @@ func parseLine(data map[string][]string, line []byte) error {
 	// Empty strings
 	if len(tokens) == 0 {
 		return nil
+	}
+
+	keywords := map[string]func(data map[string][]string, args []string) error{
+		"include":    include,
+		"loadmodule": loadModule,
 	}
 
 	// Has a keyword (loadmodule, include, etc...)

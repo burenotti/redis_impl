@@ -12,129 +12,151 @@ import (
 var (
 	ErrNotFound         = errors.New("key not found")
 	ErrTypeNotSupported = errors.New("type not supported")
+	ErrRequired         = errors.New("field is required")
 )
 
-type Config struct {
-	data map[string][]string
+type Setter interface {
+	SetValue(value []string) error
 }
 
-func read(r io.Reader) (*Config, error) {
-	c := Config{
-		data: make(map[string][]string),
-	}
-	err := parse(c.data, r)
-	return &c, err
-}
-
-func Read(r io.Reader) (*Config, error) {
-	return read(r)
-}
-
-func ReadFile(path string) (*Config, error) {
+func BindFile(cfg interface{}, path string) error {
 	file, err := os.Open(path)
 	if err != nil {
-		return nil, err
+		return err
 	}
-	return read(file)
+	return bindConfig(cfg, file)
 }
 
-func (c *Config) Get(key string) Field {
-	return Field{
-		config: c,
-		key:    key,
-		idx:    0,
-	}
+func Bind(cfg interface{}, r io.Reader) error {
+	return bindConfig(cfg, r)
 }
 
-type Field struct {
-	config *Config
-	key    string
-	idx    int
-}
-
-func (f Field) At(idx int) Field {
-	return Field{
-		config: f.config,
-		key:    f.key,
-		idx:    idx,
-	}
-}
-
-func (f Field) String(or ...string) (string, error) {
-	return value(&f, or...)
-}
-
-func (f Field) MustString(or ...string) string {
-	return must(value(&f, or...))
-}
-
-func (f Field) Int(or ...int) (int, error) {
-	return value(&f, or...)
-}
-
-func (f Field) MustInt(or ...int) int {
-	return must(value(&f, or...))
-}
-
-func (f Field) Float(or ...float64) (float64, error) {
-	return value(&f, or...)
-}
-
-func (f Field) MustFloat(or ...float64) float64 {
-	return must(value(&f, or...))
-}
-
-func (f Field) Len() int {
-	val, ok := f.config.data[f.key]
-	if !ok {
-		return 0
-	}
-	return len(val)
-}
-
-func value[T any](f *Field, or ...T) (T, error) {
-	if len(or) > 1 {
-		panic("only one argument allowed")
+func bindConfig(cfg interface{}, r io.Reader) error {
+	if reflect.TypeOf(cfg).Kind() != reflect.Ptr {
+		return fmt.Errorf("%w: config structure must be a pointer", ErrTypeNotSupported)
 	}
 
-	val, ok := f.config.data[f.key]
-	var null T
-	if !ok {
-		if len(or) == 0 {
-			return null, fmt.Errorf("%w: %s", ErrNotFound, f.key)
+	meta := configMeta{fields: make(map[string]field)}
+
+	str := reflect.ValueOf(cfg).Elem()
+
+	if err := collectStructMeta(&meta, str, ""); err != nil {
+		return err
+	}
+
+	data := make(map[string][]string)
+	if err := parse(data, r); err != nil {
+		return err
+	}
+
+	for k, f := range meta.fields {
+		val, ok := data[k]
+		if !ok {
+			if f.defaultValue != nil {
+				val = []string{*f.defaultValue}
+			} else if f.required {
+				return fmt.Errorf("%w: key %s is required", ErrRequired, k)
+			}
 		}
-		return or[0], nil
-	}
-
-	if f.idx >= len(val) {
-		if len(or) == 0 {
-			return null, fmt.Errorf("%w: %s[%d]", ErrNotFound, f.key, f.idx)
+		if err := bindValue(f.value, val); err != nil {
+			return err
 		}
-		return or[0], nil
 	}
-
-	return cast[T](val[f.idx])
+	return nil
 }
 
-func must[T any](t T, err error) T {
-	if err != nil {
-		panic(err)
+func collectStructMeta(meta *configMeta, v reflect.Value, prefix string) error {
+	t := v.Type()
+	if t.Kind() != reflect.Struct {
+		panic("value must be a struct")
 	}
-	return t
+
+	for i := 0; i < t.NumField(); i++ {
+		fv := v.Field(i)
+		ft := t.Field(i)
+		if err := collectFieldMeta(meta, ft, fv, prefix); err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
 
-func cast[T any](value string) (res T, err error) {
-	var v interface{}
-	switch reflect.TypeOf(res).Kind() {
-	case reflect.Int:
-		v, err = strconv.Atoi(value)
-	case reflect.String:
-		v, err = value, nil
-	case reflect.Float64:
-		v, err = strconv.ParseFloat(value, 64)
+func collectFieldMeta(meta *configMeta, f reflect.StructField, v reflect.Value, prefix string) error {
+	fieldMeta := field{}
+	_, fieldMeta.required = f.Tag.Lookup("redis-required")
+	name, ok := f.Tag.Lookup("redis")
+	if !ok {
+		name = f.Name
+	}
+	fieldMeta.name = prefix + name
+	fieldMeta.value = v
+	defaultValue, ok := f.Tag.Lookup("redis-default")
+	prefix += f.Tag.Get("redis-prefix")
+	if ok {
+		fieldMeta.defaultValue = &defaultValue
+	}
+
+	switch f.Type.Kind() {
+	case reflect.Struct:
+		return collectStructMeta(meta, v, prefix)
+	case reflect.Slice:
+		panic("slices are not supported")
+	case reflect.Ptr:
+		panic("pointers are not supported")
 	default:
-		v, err = nil, fmt.Errorf("%w: %s", ErrTypeNotSupported, reflect.TypeOf(res))
+		meta.fields[fieldMeta.name] = fieldMeta
+		return nil
 	}
+}
 
-	return v.(T), err
+type configMeta struct {
+	fields map[string]field
+}
+
+type field struct {
+	name         string
+	required     bool
+	value        reflect.Value
+	defaultValue *string
+}
+
+func bindValue(v reflect.Value, raw []string) error {
+	if s, ok := v.Interface().(Setter); ok {
+		return s.SetValue(raw)
+	}
+	if len(raw) == 0 {
+		return fmt.Errorf("%w: can't bind empty value", ErrSyntax)
+	}
+	switch v.Kind() {
+	case reflect.String:
+		v.SetString(raw[0])
+	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+		i, err := strconv.ParseInt(raw[0], 10, 64)
+		if err != nil {
+			return err
+		}
+		v.SetInt(i)
+	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
+		i, err := strconv.ParseUint(raw[0], 10, 64)
+		if err != nil {
+			return err
+		}
+		v.SetUint(i)
+	case reflect.Float32, reflect.Float64:
+		f, err := strconv.ParseFloat(raw[0], 64)
+		if err != nil {
+			return err
+		}
+		v.SetFloat(f)
+	case reflect.Bool:
+		b, err := strconv.ParseBool(raw[0])
+		if err != nil {
+			return err
+		}
+		v.SetBool(b)
+	default:
+		return fmt.Errorf("%w: %s", ErrTypeNotSupported, v.Type().String())
+	}
+	return nil
 }

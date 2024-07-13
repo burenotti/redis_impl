@@ -3,70 +3,10 @@ package conf
 import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"strconv"
 	"strings"
 	"testing"
 )
-
-func TestConfig_Get(t *testing.T) {
-	t.Parallel()
-	config := &Config{
-		data: map[string][]string{
-			"key":     {"val"},
-			"key_arr": {"val1", "val2", "val3"},
-			"int":     {"a", "123"},
-		},
-	}
-
-	cases := []struct {
-		Name     string
-		Expected interface{}
-		Error    error
-		Get      func(c *Config) (interface{}, error)
-	}{
-		{
-			Name:     "string",
-			Expected: "val",
-			Error:    nil,
-			Get: func(c *Config) (interface{}, error) {
-				return c.Get("key").String()
-			},
-		},
-		{
-			Name:     "string at 0",
-			Expected: "val1",
-			Error:    nil,
-			Get: func(c *Config) (interface{}, error) {
-				return c.Get("key_arr").At(0).String()
-			},
-		},
-		{
-			Name:     "string at 1",
-			Expected: "val2",
-			Error:    nil,
-			Get: func(c *Config) (interface{}, error) {
-				return c.Get("key_arr").At(1).String()
-			},
-		},
-		{
-			Name:     "int",
-			Expected: 123,
-			Error:    nil,
-			Get: func(c *Config) (interface{}, error) {
-				return c.Get("int").At(1).Int()
-			},
-		},
-	}
-
-	for _, c := range cases {
-		actual, err := c.Get(config)
-		if c.Error != nil {
-			assert.ErrorIs(t, err, c.Error)
-		} else {
-			require.NoError(t, err)
-			assert.EqualValues(t, c.Expected, actual)
-		}
-	}
-}
 
 func TestConfig_parse(t *testing.T) {
 	cases := []struct {
@@ -140,4 +80,86 @@ func TestConfig_parse(t *testing.T) {
 			}
 		})
 	}
+}
+
+type Size int
+
+func (s *Size) SetValue(raw []string) error {
+	i, err := strconv.Atoi(raw[0])
+	if err != nil {
+		return err
+	}
+	*s = Size(i)
+	return nil
+}
+
+func TestBind(t *testing.T) {
+	data := `#
+bind 0.0.0.0
+use-tls true
+use-ssl false
+port 6379
+timeout_idle 5
+timeout_read 6
+timeout_write 7
+a_b_c_d 100
+`
+	r := strings.NewReader(data)
+
+	cfg := struct {
+		Host           string `redis:"bind" redis-default:"127.0.0.1"`
+		Port           int    `redis:"port" redis-default:"6379"`
+		MaxConnections int    `redis:"max_connections" redis-default:"10"`
+		UseTLS         bool   `redis:"use-tls" redis-default:"false"`
+		UseSSL         bool   `redis:"use-ssl" redis-default:"false"`
+		MaxMemory      Size   `redis:"max_memory" redis-default:"300"`
+		A              struct {
+			B struct {
+				C struct {
+					D int `redis:"d" redis-default:"1"`
+				} `redis-prefix:"c_"`
+			} `redis-prefix:"b_"`
+		} `redis-prefix:"a_"`
+		Timeout struct {
+			Idle  int `redis:"idle" redis-default:"1"`
+			Read  int `redis:"read" redis-default:"2"`
+			Write int `redis:"write" redis-default:"3"`
+		} `redis-prefix:"timeout_"`
+	}{}
+	err := Bind(&cfg, r)
+	require.NoError(t, err)
+
+	assert.Equal(t, "0.0.0.0", cfg.Host)
+	assert.Equal(t, 6379, cfg.Port)
+	assert.Equal(t, 10, cfg.MaxConnections)
+	assert.Equal(t, 5, cfg.Timeout.Idle)
+	assert.Equal(t, 6, cfg.Timeout.Read)
+	assert.Equal(t, 7, cfg.Timeout.Write)
+	assert.Equal(t, Size(300), cfg.MaxMemory)
+	assert.Equal(t, true, cfg.UseTLS)
+	assert.Equal(t, false, cfg.UseSSL)
+	assert.Equal(t, 100, cfg.A.B.C.D)
+
+}
+
+func TestBind_requiredFields(t *testing.T) {
+
+	r := strings.NewReader(``)
+
+	cfg1 := struct {
+		B string `redis:"b" redis-default:"default-b"`
+		C string `redis:"c" redis-default:"default-c"`
+		A string `redis:"a" redis-required:""`
+	}{}
+	err := Bind(&cfg1, r)
+	assert.ErrorIs(t, err, ErrRequired)
+}
+
+func TestBind_badCases(t *testing.T) {
+	cfg := struct {
+		A complex64 `redis:"a"`
+	}{}
+
+	err := Bind(&cfg, strings.NewReader("a 123i+2"))
+	require.ErrorIs(t, err, ErrTypeNotSupported)
 }

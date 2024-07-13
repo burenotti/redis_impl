@@ -14,18 +14,10 @@ type Config struct {
 	}
 }
 
-func Load(filePath string) (res *Config, err error) {
-	cfg, err := conf.ReadFile(filePath)
-	if err != nil {
-		return nil, err
-	}
-	res = &Config{}
-	res.Server.Host = cfg.Get("bind").MustString("127.0.0.1")
-	res.Server.Port = cfg.Get("port").MustInt(6379)
-	res.Server.MaxConnections = cfg.Get("max_connection").MustInt(16)
-	res.Server.ShutdownTimeout = time.Duration(cfg.Get("shutdown_timeout").MustInt(5)) * time.Second
-
-	return
+func Load(filePath string) (cfg *Config, err error) {
+	cfg = &Config{}
+	err = conf.BindFile(cfg, filePath)
+	return cfg, err
 }
 
 func MustLoad(filePath string) *Config {
