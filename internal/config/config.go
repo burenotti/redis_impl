@@ -1,30 +1,31 @@
 package config
 
 import (
-	"errors"
-	"fmt"
-	"github.com/ilyakaznacheev/cleanenv"
+	"github.com/burenotti/redis_impl/pkg/conf"
 	"time"
 )
 
-var ErrConfigNotLoaded = errors.New("config not loaded")
-
 type Config struct {
 	Server struct {
-		Host            string        `yaml:"host" env-default:"localhost"`
-		Port            int           `yaml:"port" env-default:"6379"`
-		ShutdownTimeout time.Duration `yaml:"shutdown_timeout" env-default:"5s"`
-		MaxConnections  int           `yaml:"max_connections" env-default:"1024"`
-	} `yaml:"server"`
+		Host            string
+		Port            int
+		ShutdownTimeout time.Duration
+		MaxConnections  int
+	}
 }
 
-func Load(filePath string) (*Config, error) {
-	cfg := &Config{}
-	if err := cleanenv.ReadConfig(filePath, cfg); err != nil {
-		return nil, configNotLoadedErr("config not loaded: %w", err)
+func Load(filePath string) (res *Config, err error) {
+	cfg, err := conf.ReadFile(filePath)
+	if err != nil {
+		return nil, err
 	}
+	res = &Config{}
+	res.Server.Host = cfg.Get("bind").MustString("127.0.0.1")
+	res.Server.Port = cfg.Get("port").MustInt(6379)
+	res.Server.MaxConnections = cfg.Get("max_connection").MustInt(16)
+	res.Server.ShutdownTimeout = time.Duration(cfg.Get("shutdown_timeout").MustInt(5)) * time.Second
 
-	return cfg, nil
+	return
 }
 
 func MustLoad(filePath string) *Config {
@@ -33,8 +34,4 @@ func MustLoad(filePath string) *Config {
 		panic(err)
 	}
 	return cfg
-}
-
-func configNotLoadedErr(format string, args ...any) error {
-	return errors.Join(fmt.Errorf(format, args...), ErrConfigNotLoaded) //nolint:err113 // joining errors is ok
 }
