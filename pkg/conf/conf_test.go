@@ -9,10 +9,13 @@ import (
 
 func TestConfig_Get(t *testing.T) {
 	t.Parallel()
-	config := &Config{}
-	config.data["key"] = []string{"val"}
-	config.data["key_arr"] = []string{"val1", "val2", "val3"}
-	config.data["int"] = []string{"a", "123"}
+	config := &Config{
+		data: map[string][]string{
+			"key":     {"val"},
+			"key_arr": {"val1", "val2", "val3"},
+			"int":     {"a", "123"},
+		},
+	}
 
 	cases := []struct {
 		Name     string
