@@ -12,6 +12,10 @@ func Ping() Command {
 	return &ping{}
 }
 
+func (p *ping) Args() []interface{} {
+	return []interface{}{PING}
+}
+
 type ping struct {
 	baseCommand
 }
@@ -47,4 +51,8 @@ func (h *hello) Execute(_ context.Context, _ Client) (*Result, error) {
 		"modules",
 		[]interface{}{},
 	}), nil
+}
+
+func (h *hello) Args() []interface{} {
+	return []interface{}{HELLO}
 }

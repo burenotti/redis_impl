@@ -23,6 +23,10 @@ func (m *multi) Execute(ctx context.Context, storage Client) (*Result, error) {
 	return NewResult("OK"), nil
 }
 
+func (m *multi) Args() []interface{} {
+	return []interface{}{MULTI}
+}
+
 type exec struct {
 	txCommand
 }
@@ -43,6 +47,10 @@ func (e *exec) Execute(ctx context.Context, storage Client) (*Result, error) {
 	return res, nil
 }
 
+func (e *exec) Args() []interface{} {
+	return []interface{}{EXEC}
+}
+
 type discard struct {
 	txCommand
 }
@@ -60,6 +68,10 @@ func (d *discard) Execute(ctx context.Context, storage Client) (*Result, error) 
 		return NewResult(err), err
 	}
 	return OkResult(), nil
+}
+
+func (d *discard) Args() []interface{} {
+	return []interface{}{DISCARD}
 }
 
 type watch struct {
@@ -84,6 +96,10 @@ func (w *watch) Execute(ctx context.Context, storage Client) (*Result, error) {
 	return OkResult(), nil
 }
 
+func (w *watch) Args() []interface{} {
+	return []interface{}{WATCH}
+}
+
 type unwatch struct {
 	txCommand
 }
@@ -101,4 +117,8 @@ func (u *unwatch) Execute(ctx context.Context, storage Client) (*Result, error) 
 		return NewResult(err), err
 	}
 	return OkResult(), nil
+}
+
+func (u *unwatch) Args() []interface{} {
+	return []interface{}{UNWATCH}
 }

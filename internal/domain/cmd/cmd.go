@@ -50,6 +50,7 @@ type Command interface {
 	Execute(ctx context.Context, storage Client) (*Result, error)
 	IsModifying() bool
 	IsTx() bool
+	Args() []interface{}
 }
 
 type baseCommand struct{}

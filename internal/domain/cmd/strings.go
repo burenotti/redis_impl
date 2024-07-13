@@ -18,7 +18,7 @@ type get struct {
 	Keys []string
 }
 
-func (g get) Execute(ctx context.Context, c Client) (*Result, error) {
+func (g *get) Execute(ctx context.Context, c Client) (*Result, error) {
 	result := make([]interface{}, 0, len(g.Keys))
 	storage := c.Storage()
 	for _, key := range g.Keys {
@@ -35,8 +35,16 @@ func (g get) Execute(ctx context.Context, c Client) (*Result, error) {
 	return &Result{Values: result}, nil
 }
 
-func (g get) Name() string {
+func (g *get) Name() string {
 	return GET
+}
+
+func (g *get) Args() []interface{} {
+	res := []interface{}{GET}
+	for _, key := range g.Keys {
+		res = append(res, key)
+	}
+	return res
 }
 
 type ExistsOpt string
@@ -143,4 +151,29 @@ func (s *set) Execute(ctx context.Context, c Client) (*Result, error) {
 	}
 
 	return OkResult(), nil
+}
+
+func (s *set) Args() []interface{} {
+	res := []interface{}{SET, s.key, s.value}
+
+	if s.get {
+		res = append(res, "GET")
+	}
+
+	if s.exists == NotExists {
+		res = append(res, "NX")
+	}
+	if s.exists == Exists {
+		res = append(res, "XX")
+	}
+
+	if s.expiresAt != nil {
+		res = append(res, "PXAT", s.expiresAt.Unix())
+	}
+
+	if s.keepTTL {
+		res = append(res, "KEEPTTL")
+	}
+
+	return res
 }
