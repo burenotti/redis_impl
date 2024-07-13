@@ -66,7 +66,7 @@ func (s *Server) setRunning(val bool) {
 
 func (s *Server) Run() error {
 	if s.running {
-		panic("server already running")
+		panic("server is already running")
 	}
 
 	addr := net.JoinHostPort(s.Host, strconv.Itoa(s.Port))
@@ -89,7 +89,7 @@ func (s *Server) Run() error {
 		case <-s.softDone:
 			return nil
 		default:
-			if err := s.accept(); err != nil {
+			if err := s.accept(); err != nil && !errors.Is(err, net.ErrClosed) {
 				s.Logger.Info("failed to accept connection", "error", err)
 			}
 		}
@@ -98,7 +98,7 @@ func (s *Server) Run() error {
 
 func (s *Server) Stop(timeout time.Duration) error {
 	if !s.running {
-		panic("server already stopped")
+		return nil
 	}
 	close(s.softDone)
 
@@ -108,13 +108,20 @@ func (s *Server) Stop(timeout time.Duration) error {
 		close(done)
 	}()
 
+	var resultErr error
 	select {
 	case <-done:
-		return nil
+		resultErr = nil
 	case <-time.After(timeout):
 		close(s.hardDone)
-		return ErrStoppedAbnormally
+		resultErr = ErrStoppedAbnormally
 	}
+
+	if err := s.listener.Close(); err != nil && !errors.Is(err, net.ErrClosed) {
+		s.Logger.Error("failed to close listener", "error", err)
+	}
+	s.workers.Wait()
+	return resultErr
 }
 
 func (s *Server) accept() error {

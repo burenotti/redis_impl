@@ -1,5 +1,4 @@
-//go:build disabled && integration
-// +build disabled,integration
+//go:build integration
 
 package main
 
@@ -12,6 +11,8 @@ import (
 	"errors"
 	"github.com/burenotti/redis_impl/internal/config"
 	"github.com/burenotti/redis_impl/internal/server"
+	"github.com/burenotti/redis_impl/internal/service"
+	"github.com/burenotti/redis_impl/internal/storage/memory"
 	"github.com/redis/go-redis/v9"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -28,10 +29,11 @@ func TestTestSuite(t *testing.T) {
 
 type TestSuite struct {
 	suite.Suite
-	redis  *redis.Client
-	server *server.Server
-	ctx    context.Context
-	cancel context.CancelFunc
+	redis   *redis.Client
+	service *service.RedisService
+	server  *server.Server
+	ctx     context.Context
+	cancel  context.CancelFunc
 }
 
 func (s *TestSuite) SetupTest() {
@@ -45,7 +47,9 @@ func (s *TestSuite) SetupTest() {
 	cfg.Server.Port = 7379
 	cfg.Server.MaxConnections = 10
 
-	s.server = initServer(slog.Default(), cfg)
+	storage := memory.New()
+	s.service = service.NewService(storage, 1000)
+	s.server = initServer(slog.Default(), cfg, s.service)
 	go func() {
 		if err := s.server.Run(); err != nil {
 			if !errors.Is(err, context.Canceled) {
@@ -73,6 +77,7 @@ func (s *TestSuite) SetupTest() {
 func (s *TestSuite) TearDownTest() {
 	s.cancel()
 	require.NoError(s.T(), s.redis.Close())
+	s.service.Stop()
 	require.NotPanics(s.T(), func() {
 		require.NoError(s.T(), s.server.Stop(1*time.Second))
 	})

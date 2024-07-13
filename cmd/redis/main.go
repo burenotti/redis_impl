@@ -35,7 +35,6 @@ func main() {
 	parseFlags()
 
 	cfg := config.MustLoad(configPath)
-
 	store := memory.New()
 	redis := service.NewService(store, walSize)
 	go func() {
@@ -61,7 +60,8 @@ func main() {
 			logger.Error("Unexpected error while running server. Exiting.", "error", err)
 			return
 		}
-	case <-notify:
+	case sig := <-notify:
+		logger.Info("Received signal. Exiting.", "signal", sig)
 	}
 
 	if err := srv.Stop(cfg.Server.ShutdownTimeout); err != nil {
