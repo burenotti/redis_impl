@@ -7,5 +7,5 @@
 # DON'T EDIT THIS!
 set -e
 tmpFile=$(mktemp)
-go build -o "$tmpFile" app/*.go
-exec "$tmpFile" "$@"
+go build -o "$tmpFile" ./cmd/redis/main.go
+exec "$tmpFile" -config ./config/config.dist.yaml "$@"

@@ -1,4 +1,5 @@
 config/config*.yaml
+!config/config.dist.yaml
 build/
 
 ### GoLand+all template
@@ -186,3 +187,4 @@ Network Trash Folder
 Temporary Items
 .apdisk
 
+!/config/config.dist.yaml
