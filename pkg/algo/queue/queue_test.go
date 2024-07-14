@@ -1,9 +1,9 @@
 package queue_test
 
 import (
+	"github.com/burenotti/redis_impl/pkg/algo/queue"
 	"testing"
 
-	"github.com/burenotti/redis_impl/pkg/queue"
 	"github.com/stretchr/testify/assert"
 )
 

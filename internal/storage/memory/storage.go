@@ -3,7 +3,7 @@ package memory
 import (
 	"context"
 	"github.com/burenotti/redis_impl/internal/domain/cmd"
-	"github.com/burenotti/redis_impl/pkg/heap"
+	"github.com/burenotti/redis_impl/pkg/algo/heap"
 	"time"
 )
 

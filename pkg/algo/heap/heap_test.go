@@ -1,7 +1,7 @@
 package heap_test
 
 import (
-	"github.com/burenotti/redis_impl/pkg/heap"
+	"github.com/burenotti/redis_impl/pkg/algo/heap"
 	"github.com/stretchr/testify/assert"
 	"sort"
 	"testing"
