@@ -1,0 +1,15 @@
+repos:
+  - repo: https://github.com/tekwizely/pre-commit-golang
+    rev: v1.0.0-rc.1
+    hooks:
+      # Go build
+      - id: go-build-mod
+
+      # Go Mod Tidy
+      - id: go-mod-tidy
+
+      # Go run unit tests
+      - id: go-test-mod
+        args: [ "./...", "-tags=unit" ]
+
+      - id: golangci-lint
