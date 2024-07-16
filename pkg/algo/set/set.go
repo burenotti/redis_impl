@@ -200,10 +200,11 @@ func deleteNode[T any](root *node[T], val T, less Less[T]) *node[T] {
 	if root == nil {
 		return root
 	}
-	if less(val, root.val) { //nolint:nestif // can't be rewritten with switch
+	if less(val, root.val) { //nolint:gocritic,nestif // gocritic proposes nonsense. complexity is required
 		root.left = deleteNode(root.left, val, less)
 	} else if less(root.val, val) {
 		root.right = deleteNode(root.right, val, less)
+	} else {
 		if root.left == nil || root.right == nil {
 			temp := root.left
 			if temp == nil {
@@ -246,7 +247,8 @@ func deleteNode[T any](root *node[T], val T, less Less[T]) *node[T] {
 func find[T any](n *node[T], val T, less Less[T]) *node[T] {
 	current := n
 	for current != nil {
-		if less(val, current.val) { //nolint:gocritic // The statement can't be rewritten with switch
+		//nolint:gocritic // gocritic proposes nonsense
+		if less(val, current.val) {
 			current = current.left
 		} else if less(current.val, val) {
 			current = current.right
