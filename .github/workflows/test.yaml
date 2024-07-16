@@ -44,6 +44,8 @@ jobs:
   test:
     needs: [ build ]
     if: ${{ needs.build.result == 'success' }}
+    outputs:
+      coverage: ${{ steps.get-coverage.outputs.coverage }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -59,6 +61,7 @@ jobs:
         run: make test
 
       - name: Get total coverage
+        id: get-coverage
         run: |
           COVERAGE=$(go tool cover -func build/coverage.out | \
           grep --color=never "^total:" | \
@@ -89,7 +92,7 @@ jobs:
           gistID: ${{ vars.GIST_ID }}
           filename: ${{ env.REPO_NAME }}__${{ env.BRANCH_NAME }}.json
           label: Code coverage
-          message: '${{ env.COVERAGE }}%'
+          message: '${{ needs.test.outputs.coverage }}%'
           minColorRange: 50
           maxColorRange: 90
           valColorRange: ${{ needs.test.outputs.coverage }}
