@@ -1,3 +1,4 @@
+//nolint:testpackage // There are tests that validates behaviour of internal functions
 package conf
 
 import (
@@ -8,7 +9,9 @@ import (
 	"testing"
 )
 
+//nolint:funlen // don't care if test is long
 func TestConfig_parse(t *testing.T) {
+	t.Parallel()
 	cases := []struct {
 		Name     string
 		Input    []string
@@ -94,6 +97,7 @@ func (s *Size) SetValue(raw []string) error {
 }
 
 func TestBind(t *testing.T) {
+	t.Parallel()
 	data := `#
 bind 0.0.0.0
 use-tls true
@@ -139,11 +143,10 @@ a_b_c_d 100
 	assert.Equal(t, true, cfg.UseTLS)
 	assert.Equal(t, false, cfg.UseSSL)
 	assert.Equal(t, 100, cfg.A.B.C.D)
-
 }
 
 func TestBind_requiredFields(t *testing.T) {
-
+	t.Parallel()
 	r := strings.NewReader(``)
 
 	cfg1 := struct {
@@ -156,6 +159,7 @@ func TestBind_requiredFields(t *testing.T) {
 }
 
 func TestBind_badCases(t *testing.T) {
+	t.Parallel()
 	cfg := struct {
 		A complex64 `redis:"a"`
 	}{}

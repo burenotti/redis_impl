@@ -46,7 +46,12 @@ func New() *Storage {
 	}
 }
 
-func (s *Storage) Set(_ context.Context, key string, value interface{}, expiresAt *time.Time) (cmd.Entry, error) {
+func (s *Storage) Set(
+	_ context.Context,
+	key string,
+	value interface{},
+	expiresAt *time.Time,
+) (cmd.Entry, error) {
 	prevRev := s.revision(key)
 	e := &Entry{
 		key:       key,

@@ -9,13 +9,16 @@ import (
 )
 
 func TestSortedSet_Min(t *testing.T) {
+	t.Parallel()
 	t.Run("should return false if set is empty", func(t *testing.T) {
+		t.Parallel()
 		s := set.Of[int]()
 		_, ok := s.Min()
 		assert.False(t, ok)
 	})
 
 	t.Run("should return min value", func(t *testing.T) {
+		t.Parallel()
 		s := set.Of[int](6, 3, 1, 2, 4)
 		v, ok := s.Min()
 		assert.True(t, ok)
@@ -24,13 +27,16 @@ func TestSortedSet_Min(t *testing.T) {
 }
 
 func TestSortedSet_Max(t *testing.T) {
+	t.Parallel()
 	t.Run("should return false if set is empty", func(t *testing.T) {
+		t.Parallel()
 		s := set.Of[int]()
 		_, ok := s.Max()
 		assert.False(t, ok)
 	})
 
 	t.Run("should return max value", func(t *testing.T) {
+		t.Parallel()
 		s := set.Of[int](6, 3, 1, 2, 4)
 		v, ok := s.Max()
 		assert.True(t, ok)
@@ -39,6 +45,7 @@ func TestSortedSet_Max(t *testing.T) {
 }
 
 func TestSortedSet_Add(t *testing.T) {
+	t.Parallel()
 	s := set.Of[int](6, 3, 1, 2, 4)
 	assert.True(t, s.Has(3))
 	s.Add(3)
@@ -56,6 +63,7 @@ func TestSortedSet_Add(t *testing.T) {
 }
 
 func TestSortedSet_Ascend(t *testing.T) {
+	t.Parallel()
 	items := []int{6, 3, 2, 100, 1, 4, -5, 0, 10}
 
 	s := set.Of[int](items...)
@@ -63,6 +71,7 @@ func TestSortedSet_Ascend(t *testing.T) {
 	sort.Ints(items)
 
 	t.Run("should traverse items in ascend order", func(t *testing.T) {
+		t.Parallel()
 		i := 0
 		s.Ascend(func(v int) bool {
 			assert.Equal(t, v, items[i])
@@ -73,6 +82,7 @@ func TestSortedSet_Ascend(t *testing.T) {
 	})
 
 	t.Run("should stop traverse if iterator returns false", func(t *testing.T) {
+		t.Parallel()
 		i := 0
 		s.Ascend(func(v int) bool {
 			assert.Equal(t, v, items[i])
@@ -84,6 +94,7 @@ func TestSortedSet_Ascend(t *testing.T) {
 }
 
 func TestSortedSet_Descend(t *testing.T) {
+	t.Parallel()
 	items := []int{6, 3, 2, 100, 1, 4, -5, 0, 10}
 
 	s := set.Of[int](items...)
@@ -93,6 +104,7 @@ func TestSortedSet_Descend(t *testing.T) {
 	})
 
 	t.Run("should traverse items in ascend order", func(t *testing.T) {
+		t.Parallel()
 		i := 0
 		s.Descend(func(v int) bool {
 			assert.Equal(t, v, items[i])
@@ -103,6 +115,7 @@ func TestSortedSet_Descend(t *testing.T) {
 	})
 
 	t.Run("should stop traverse if iterator returns false", func(t *testing.T) {
+		t.Parallel()
 		i := 0
 		s.Descend(func(v int) bool {
 			assert.Equal(t, v, items[i])
@@ -114,9 +127,11 @@ func TestSortedSet_Descend(t *testing.T) {
 }
 
 func TestSortedSet_Remove(t *testing.T) {
+	t.Parallel()
 	items := []int{6, 3, 2, 100, 1, 4, -5, 0, 10}
 
 	t.Run("should delete items", func(t *testing.T) {
+		t.Parallel()
 		s := set.Of(items...)
 		for i, item := range items {
 			assert.Equal(t, len(items)-i, s.Size())
@@ -129,6 +144,7 @@ func TestSortedSet_Remove(t *testing.T) {
 	})
 
 	t.Run("should not panic if item is not present in set", func(t *testing.T) {
+		t.Parallel()
 		s := set.Of(items...)
 		assert.False(t, s.Remove(200))
 		assert.False(t, s.Remove(-100))

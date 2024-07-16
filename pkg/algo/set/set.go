@@ -103,7 +103,7 @@ func height[T any](n *node[T]) int {
 	return n.height
 }
 
-// Creates a new node structure
+// Creates a new node structure.
 func newNode[T any](val T) *node[T] {
 	return &node[T]{
 		val:    val,
@@ -123,7 +123,7 @@ func rightRotate[T any](y *node[T]) *node[T] {
 	return x
 }
 
-// Performs a left rotation on the node
+// Performs a left rotation on the node.
 func leftRotate[T any](x *node[T]) *node[T] {
 	y := x.right
 	T2 := y.left
@@ -134,20 +134,19 @@ func leftRotate[T any](x *node[T]) *node[T] {
 	return y
 }
 
-func balance[T any](N *node[T]) int {
-	if N == nil {
+func balance[T any](n *node[T]) int {
+	if n == nil {
 		return 0
 	}
-	return height(N.left) - height(N.right)
+	return height(n.left) - height(n.right)
 }
 
-// Inserts a new node into the
-// AVL Tree
+// Inserts a new node into the AVL Tree.
 func insertNode[T any](node *node[T], val T, less Less[T]) *node[T] {
 	if node == nil {
 		return newNode(val)
 	}
-	if less(val, node.val) {
+	if less(val, node.val) { //nolint:gocritic // can't be rewritten with switch
 		node.left = insertNode(node.left, val, less)
 	} else if less(node.val, val) {
 		node.right = insertNode(node.right, val, less)
@@ -195,25 +194,22 @@ func findMax[T any](node *node[T]) *node[T] {
 	return current
 }
 
-// Deletes a node from the AVL Tree
+// Deletes a node from the AVL Tree.
 func deleteNode[T any](root *node[T], val T, less Less[T]) *node[T] {
-
 	// Searching node
 	if root == nil {
 		return root
 	}
-	if less(val, root.val) {
+	if less(val, root.val) { //nolint:nestif // can't be rewritten with switch
 		root.left = deleteNode(root.left, val, less)
 	} else if less(root.val, val) {
 		root.right = deleteNode(root.right, val, less)
-	} else {
 		if root.left == nil || root.right == nil {
 			temp := root.left
 			if temp == nil {
 				temp = root.right
 			}
 			if temp == nil {
-				temp = root
 				root = nil
 			} else {
 				*root = *temp
@@ -233,18 +229,16 @@ func deleteNode[T any](root *node[T], val T, less Less[T]) *node[T] {
 	if balanceFactor > 1 {
 		if balance(root.left) >= 0 {
 			return rightRotate(root)
-		} else {
-			root.left = leftRotate(root.left)
-			return rightRotate(root)
 		}
+		root.left = leftRotate(root.left)
+		return rightRotate(root)
 	}
 	if balanceFactor < -1 {
 		if balance(root.right) <= 0 {
 			return leftRotate(root)
-		} else {
-			root.right = rightRotate(root.right)
-			return leftRotate(root)
 		}
+		root.right = rightRotate(root.right)
+		return leftRotate(root)
 	}
 	return root
 }
@@ -252,7 +246,7 @@ func deleteNode[T any](root *node[T], val T, less Less[T]) *node[T] {
 func find[T any](n *node[T], val T, less Less[T]) *node[T] {
 	current := n
 	for current != nil {
-		if less(val, current.val) {
+		if less(val, current.val) { //nolint:gocritic // The statement can't be rewritten with switch
 			current = current.left
 		} else if less(current.val, val) {
 			current = current.right

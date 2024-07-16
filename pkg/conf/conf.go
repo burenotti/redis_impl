@@ -97,16 +97,17 @@ func collectFieldMeta(meta *configMeta, f reflect.StructField, v reflect.Value, 
 		fieldMeta.defaultValue = &defaultValue
 	}
 
-	switch f.Type.Kind() {
+	switch f.Type.Kind() { //nolint:exhaustive // switch has a default clause
 	case reflect.Struct:
 		return collectStructMeta(meta, v, prefix)
-	case reflect.Slice:
-		panic("slices are not supported")
-	case reflect.Ptr:
-		panic("pointers are not supported")
-	default:
+	case reflect.String,
+		reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64,
+		reflect.Float64, reflect.Float32,
+		reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
 		meta.fields[fieldMeta.name] = fieldMeta
 		return nil
+	default:
+		panic("data type" + f.Type.String() + " is not supported")
 	}
 }
 
@@ -128,7 +129,7 @@ func bindValue(v reflect.Value, raw []string) error {
 	if len(raw) == 0 {
 		return fmt.Errorf("%w: can't bind empty value", ErrSyntax)
 	}
-	switch v.Kind() {
+	switch v.Kind() { //nolint:exhaustive // return error by default
 	case reflect.String:
 		v.SetString(raw[0])
 	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:

@@ -4,13 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"time"
-
 	"github.com/burenotti/redis_impl/internal/domain/cmd"
-)
-
-const (
-	defaultUnlockTimeout = 5 * time.Second
 )
 
 var (

@@ -11,6 +11,7 @@ import (
 )
 
 func TestStorage_canSetValues(t *testing.T) {
+	t.Parallel()
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
@@ -38,10 +39,10 @@ func TestStorage_canSetValues(t *testing.T) {
 	value, err = storage.Get(ctx, "middle_name")
 	assert.Nil(t, value)
 	assert.ErrorIs(t, err, cmd.ErrKeyNotFound)
-
 }
 
 func TestStorage_canSetExpiringValues(t *testing.T) {
+	t.Parallel()
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
@@ -55,10 +56,10 @@ func TestStorage_canSetExpiringValues(t *testing.T) {
 	time.Sleep(2 * ttl)
 	_, err = storage.Get(ctx, "last_name")
 	assert.ErrorIs(t, err, cmd.ErrExpired)
-
 }
 
 func TestStorage_canDeleteValues(t *testing.T) {
+	t.Parallel()
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
@@ -69,8 +70,8 @@ func TestStorage_canDeleteValues(t *testing.T) {
 	e, err := storage.Del(ctx, "last_name")
 	assert.Nil(t, e)
 	require.ErrorIs(t, cmd.ErrKeyNotFound, err)
-	e, err = storage.Del(ctx, "first_name")
+	_, err = storage.Del(ctx, "first_name")
 	require.NoError(t, err)
-	e, err = storage.Del(ctx, "first_name")
+	_, err = storage.Del(ctx, "first_name")
 	require.ErrorIs(t, err, cmd.ErrKeyNotFound)
 }

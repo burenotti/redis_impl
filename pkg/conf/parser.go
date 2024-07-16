@@ -17,7 +17,7 @@ var (
 	ErrSyntax       = errors.New("syntax error")
 )
 
-func loadModule(data map[string][]string, args []string) error {
+func loadModule(_ map[string][]string, _ []string) error {
 	return fmt.Errorf("%w: loading modules is not yet supported", ErrNotSupported)
 }
 
@@ -51,7 +51,6 @@ func parse(data map[string][]string, r io.Reader) error {
 }
 
 func parseLine(data map[string][]string, line []byte) error {
-
 	// Comment line
 	if r, _ := utf8.DecodeRune(line); r == '#' {
 		return nil
@@ -129,5 +128,5 @@ func tokenizeLine(line []rune) (result []string, err error) {
 	if word.Len() > 0 {
 		result = append(result, word.String())
 	}
-	return
+	return result, err
 }
