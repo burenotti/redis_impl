@@ -103,11 +103,12 @@ func collectFieldMeta(meta *configMeta, f reflect.StructField, v reflect.Value, 
 	case reflect.String,
 		reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64,
 		reflect.Float64, reflect.Float32,
-		reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
+		reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64,
+		reflect.Bool:
 		meta.fields[fieldMeta.name] = fieldMeta
 		return nil
 	default:
-		panic("data type" + f.Type.String() + " is not supported")
+		return fmt.Errorf("%w: %s", ErrTypeNotSupported, f.Type)
 	}
 }
 
