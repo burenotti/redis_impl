@@ -1,4 +1,4 @@
-name: Go
+name: Build, lint & test
 
 on:
   push:
@@ -14,16 +14,34 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Set up Go
-        uses: actions/setup-go@v4
+        uses: actions/setup-go@v5
         with:
           go-version: '1.22'
-          cache-dependency-path: ''
+          cache-dependency-path: '/go'
 
       - name: Build
         run: make build
 
-      - name: Test
-        run: make test
+  lint:
+    needs: [ build ]
+    if: ${{ success() }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+
+  test:
+    needs: [ build ]
+    if: ${{ needs.build.result == 'success' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.22'
+          cache-dependency-path: '/go'
 
       - name: Get total coverage
         run: |
@@ -32,14 +50,22 @@ jobs:
           awk '{print substr($3, 1, length($3)-1)}')
           
           echo "coverage: $COVERAGE"
-          echo "COVERAGE=$COVERAGE" >> $GITHUB_ENV
+          echo "coverage=$COVERAGE" >> $GITHUB_OUTPUT 
 
+  generate_badge:
+    needs: [ test ]
+    if: ${{ needs.test.result == 'success' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Collect coverage info
+        run: |
           echo "REPO_NAME=${{ github.event.repository.name }}" >> $GITHUB_ENV
-          
+
           # Replace slashes with underscores
           BRANCH_NAME=$(echo "${{ github.ref }}" | sed 's/\//_/g')
           echo $BRANCH_NAME
           echo "BRANCH_NAME=$BRANCH_NAME" >> $GITHUB_ENV
+
 
       - name: Generate Cover Badge
         uses: schneegans/dynamic-badges-action@v1.7.0
@@ -51,5 +77,5 @@ jobs:
           message: '${{ env.COVERAGE }}%'
           minColorRange: 50
           maxColorRange: 90
-          valColorRange: ${{ env.COVERAGE }}
+          valColorRange: ${{ needs.test.outputs.coverage }}
           namedLogo: go
